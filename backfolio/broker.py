@@ -1,5 +1,8 @@
 import ccxt
+from math import isnan
+from datetime import datetime
 from abc import ABCMeta, abstractmethod
+from ccxt.base.errors import OrderNotFound
 from .core.utils import fast_xs
 from .core.object import Order
 from .core.event import (
@@ -330,16 +333,17 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         """
         self.exchange.options["warnOnFetchOpenOrdersWithoutSymbol"] = False
         orders = self.exchange.fetch_open_orders()
-        print("Cancelling current orders:")
         for order in orders:
-            print(order)
             try:
                 self.exchange.cancel_order(order['id'], order['symbol'])
-            except ccxt.errors.OrderNotFound:
+                self.context.notify(
+                    "Cancelled open %4s order: %s for %s at %.8f" % (
+                     order['side'], order['id'], order['symbol'],
+                     order['price']), formatted=True)
+            except ccxt.base.errors.OrderNotFound:
                 pass
 
-    def reject_order(self, request, exchange, quantity, cost, price, reason):
-        order = Order(request, exchange, quantity, cost, price, 0, None)
+    def reject_order(self, order, reason):
         order.mark_rejected()
         event = OrderRejectedEvent(order, '[BROKER]: %s' % reason)
         self.events.put(event)
@@ -369,20 +373,15 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         limits = market_data[symbol]['limits']
 
         if not quantity:
-            return self.reject_order(order, exchange, quantity, cost, price,
-                                     'Quantity zero?')
+            return self.reject_order(order, 'Quantity zero?')
         if abs(quantity) < limits['amount']['min']:
-            return self.reject_order(order, exchange, quantity, cost, price,
-                                     'Quantity < min. Exchange Value')
+            return self.reject_order(order, 'Quantity < min. Exchange Value')
         if abs(cost) < limits['cost']['min']:
-            return self.reject_order(order, exchange, quantity, cost, price,
-                                     'Cost < min. Exchange Value')
+            return self.reject_order(order, 'Cost < min. Exchange Value')
         if price < limits['price']['min']:
-            return self.reject_order(order, exchange, quantity, cost, price,
-                                     'Price < min. Exchange Value')
+            return self.reject_order(order, 'Price < min. Exchange Value')
         if abs(cost) < self.min_order_size:
-            return self.reject_order(order, exchange, quantity, cost, price,
-                                     'Cost < min. Order Size')
+            return self.reject_order(order, 'Cost < min. Order Size')
 
         # create order on exchange
         if order.order_type == 'LIMIT' and quantity > 0:
@@ -398,37 +397,41 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             resp = self.exchange.create_market_sell_order(
                 symbol, abs(quantity))
 
-        print("Order created:")
-        print(resp)
         cost = resp['cost'] if resp['cost'] else resp['amount']*resp['price']
         comm = resp['fee']['cost'] if resp['fee'] else 0
         comm_asset = resp['fee']['currency'] if resp['fee'] else None
         order.id = resp['id']
         order.time = resp['datetime']
         order.cost = cost
-        order.commission = (comm, comm_asset)
-        print(order, order_created_event.item)
+        order.commission = comm
+        order.commission_asset = comm_asset
         return order
 
     def check_order_statuses(self):
         orders = self.portfolio.orders
 
         for idx, order in enumerate(orders):
-            order = Order._construct_from_portfolio(order, self.portfolio)
-            print("Checking order status:")
-            print(order)
-            if not order.id or not order.is_open():
+            order = Order._construct_from_data(order, self.portfolio)
+            if not order.id or isnan(order.id) or not order.is_open:
                 continue
+
+            resp = {}
             symbol = self.datacenter.assets_to_symbol(order.asset, order.base)
-            resp = self.exchange.fetch_order(order.id, symbol)
+
+            try:
+                resp = self.exchange.fetch_order(order.id, symbol)
+            except OrderNotFound:
+                resp = {'status': 'unknown', 'remaining': 0,
+                        'datetime': datetime.utcnow()}
+
             order.status = resp['status']
             order.remaining = resp['remaining']
-            order.updated_at = resp['lastTradeTimestamp']
+            order.updated_at = resp['datetime']
             self.portfolio.orders[idx] = order.data
 
-            if order.is_closed():
+            if order.is_closed:
                 self.context.events.put(OrderFilledEvent(order))
-            elif order.is_cancelled():
+            elif order.is_cancelled:
                 data = order.data.copy()
                 data['quantity'] = data['quantity'] - data['remaining']
                 if data['quantity']:

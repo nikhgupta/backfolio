@@ -68,11 +68,13 @@ class AbstractReporter(object):
 
 
 class BaseReporter(AbstractReporter):
-    def __init__(self, annualization=365, daily=True, log_axis=True):
+    def __init__(self, annualization=365, daily=True,
+                 log_axis=True, plot=True):
         super().__init__(name='base-reporter')
         self.annualization = annualization
         self.log_axis = log_axis
         self.daily = daily
+        self.plot = plot
 
     def generate_summary_report(self):
         if len(self.portfolio.timeline) < 2:
@@ -114,34 +116,39 @@ class BaseReporter(AbstractReporter):
                 self.portfolio.daily.returns, series.returns,
                 period='daily', annualization=ticks)
 
-        # FIXME: somehow, this is not being set correctly - lets, just rerun.
-        fig, ax = plt.subplots()
-        ax.set_title('Performance Report')
-        if self.log_axis:
-            ax.set_yscale('log')
+        if self.plot:
+            fig, ax = plt.subplots()
+            ax.set_title('Performance Report')
+            if self.log_axis:
+                ax.set_yscale('log')
+
         for bm in benchmarks:
             name, series = (bm.name, bm.daily)
-            curve = bm.daily if self.daily else bm.timeline
-            ax.plot(curve.cum_returns, label=bm.name)
             returns = fast_xs(df, 'final_return')
             df.loc['performance', name] = (
                 returns[self.portfolio.name]/returns[name])
+            if self.plot:
+                curve = bm.daily if self.daily else bm.timeline
+                ax.plot(curve.cum_returns, label=bm.name)
 
-        fig.legend()
-        plt.show()
+        if self.plot:
+            fig.legend()
+            plt.show()
+
         self._data = df
         return df
 
 
 class CashAndEquityReporter(AbstractReporter):
     def __init__(self, log_axis=False, mean=True, bounds=False,
-                 each_tick=False, period=7):
+                 each_tick=False, period=7, plot=True):
         super().__init__(name='cash-and-equity-reporter')
         self.log_axis = log_axis
         self.each_tick = each_tick
         self.period = period
         self.bounds = bounds
         self.mean = mean
+        self.plot = plot
 
     def generate_tick_report(self):
         if not self.each_tick:
@@ -149,12 +156,12 @@ class CashAndEquityReporter(AbstractReporter):
         data = self.portfolio.timeline[-1]
         base = self.context.base_currency
         comm = self.context.commission_asset
-        message = "[%s] Equity: %.8f %s, Cash: %.8f %s"
-        message %= (data['time'], data['equity'], base, data['cash'], base)
+        message = "Equity: %.8f %s, Cash: %.8f %s"
+        message %= (data['equity'], base, data['cash'], base)
         if 'commission_paid' in data:
             message += ", CommPaid: %.8f %s"
             message %= (data['commission_paid'], comm)
-        print(message)
+        self.context.notify(message, formatted=True)
 
     def _plot_with_averages(self, axis, name, data):
         axis.plot(data, label=name)
@@ -168,7 +175,7 @@ class CashAndEquityReporter(AbstractReporter):
     def generate_summary_report(self):
         cash = self.portfolio.timeline.cash
         equity = self.portfolio.timeline.equity
-        if len(equity) < 2:
+        if len(equity) < 2 or not self.plot:
             return
         fig, ax = plt.subplots()
         ax.set_title('Cash vs Equity')
@@ -186,15 +193,15 @@ class OrdersReporter(AbstractReporter):
 
     def generate_summary_report(self):
         total = len(self.portfolio.orders)
-        filled = len(self.portfolio.filled_orders)/total*100
+        closed = len(self.portfolio.closed_orders)/total*100
         rejected = len(self.portfolio.rejected_orders)/total*100
-        unfilled = len(self.portfolio.unfilled_orders)/total*100
-        ignored = 100 - (filled + rejected + unfilled)
+        open = len(self.portfolio.open_orders)/total*100
+        ignored = 100 - (closed + rejected + open)
         each_tick = total / len(self.portfolio.timeline)
 
         print("Order Placement Summary")
         print("=======================")
         print(("Total: %d orders, Per Tick: %.2f orders\n" +
-               "Filled: %.2f%%, Unfilled: %.2f%%, " +
+               "Closed: %.2f%%, Open: %.2f%%, " +
                "Rejected: %.2f%%, Ignored: %.2f%%\n") % (
-                  total, each_tick, filled, unfilled, rejected, ignored))
+                  total, each_tick, closed, open, rejected, ignored))

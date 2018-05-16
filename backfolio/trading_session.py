@@ -23,7 +23,6 @@ class TradingSession:
         self.base_currency = base_currency
         self.commission = (0, base_currency)
         self.events = EventQueue()
-        self.last_run_timestamp = None
         self.session_fields = []
         self._account = None
         self._broker = None
@@ -32,6 +31,7 @@ class TradingSession:
         self._portfolio = None
         self._reporters = []
         self._benchmarks = []
+        self._notifiers = []
         self._root_dir = None
         self._slippage = lambda: 0
         self._refresh_history = True
@@ -184,9 +184,30 @@ class TradingSession:
     def add_benchmark(self, benchmark):
         self._benchmarks.append(benchmark)
 
+    @property
+    def notifiers(self):
+        if self._notifiers is None:
+            self._notifiers = []
+        return self._notifiers
+
+    @notifiers.setter
+    def notifiers(self, arr=[]):
+        self._notifiers = arr
+
+    def add_notifier(self, notifier):
+        self._notifiers.append(notifier)
+
     def log(self, message):
         if self.debug:
             print(message)
+
+    def notify(self, message, formatted=True):
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.log("[%s]: %s" % (now, message))
+        method = 'formatted_notify' if formatted else 'notify'
+        for notifier in self.notifiers:
+            if hasattr(notifier, method):
+                getattr(notifier, method)(message)
 
     def backtesting(self):
         return self.mode == 'backtest'
@@ -211,6 +232,8 @@ class TradingSession:
             fn('reporter', component)
         for component in self.benchmarks:
             fn('benchmark', component)
+        for component in self.notifiers:
+            fn('notifier', component)
         fn('strategy', self.strategy)
 
     def _load_state_from_session_for_component(self, name, component):
@@ -294,6 +317,10 @@ class TradingSession:
     def reset(self):
         self._with_each_component(self.reset_component)
 
+    def last_run_timestamp(self):
+        if len(self.portfolio.timeline) > 0:
+            return self.portfolio.timeline[-1]['time']
+
     def run(self, report=True):
         self.reset()
         self.mutate_datacenter_history(refresh=False)
@@ -305,12 +332,16 @@ class TradingSession:
 
         while True:
             self.loop_index += 1
+            self._load_state_from_session()
             self._before_each_tick()
+
             ts = self._get_next_tick()
             if not ts:
                 break
-            self._load_state_from_session()
-            self._run_hook('at_each_tick_start')
+
+            if (not self.last_run_timestamp() or
+                    ts != self.last_run_timestamp()):
+                self._run_hook('at_each_tick_start')
 
             while True:
                 try:
@@ -329,11 +360,11 @@ class TradingSession:
                 for reporter in self.reporters:
                     reporter.generate_tick_report()
             self._after_each_tick()
-            self.last_run_timestamp = ts
             if not self._should_reloop():
                 break
 
         self.portfolio.trading_session_complete()
+
         if report:
             self._run_hook('before_summary_report')
             for reporter in self.reporters:
@@ -345,7 +376,7 @@ class TradingSession:
         self._run_hook('after_any_event', event)
 
         if type(event) == TickUpdateEvent:
-            if event.item.time == self.last_run_timestamp:
+            if event.item.time == self.last_run_timestamp():
                 return
             self._run_hook('after_tick_update', event)
             self.portfolio.update_portfolio_value_at_tick(event)
@@ -366,8 +397,8 @@ class TradingSession:
 
         elif type(event) == OrderCreatedEvent:
             self._run_hook('after_order_created', event)
-            self.portfolio.record_created_order(event)
-            self.broker.execute_order_after_creation(event)
+            order = self.broker.execute_order_after_creation(event)
+            self.portfolio.record_created_order(event, order)
             self._run_hook('after_order_created_done', event)
 
         elif type(event) == OrderFilledEvent:

@@ -63,6 +63,12 @@ class BaseStrategy(object):
     def events(self):
         return self.context.events
 
+    def log(self, *args, **kwargs):
+        self.log(*args, **kwargs)
+
+    def notify(self, *args, **kwargs):
+        return self.context.notify(*args, **kwargs)
+
     @abstractmethod
     def advice_investments_at_tick(self, _tick_event):
         """ Advice investment for assets """

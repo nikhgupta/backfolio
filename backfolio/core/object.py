@@ -1,7 +1,4 @@
-import itertools
-order_counter = itertools.count()
-advice_counter = itertools.count()
-request_counter = itertools.count()
+from .utils import detect, generate_id
 
 
 class Tick:
@@ -18,8 +15,11 @@ class Tick:
 
 
 class Advice:
+    _ids = []
+
     def __init__(self, tick, strategy, symbol, exchange, last_price,
-                 quantity, quantity_type, order_type, limit_price=None):
+                 quantity, quantity_type, order_type, limit_price=None,
+                 id=0):
         self.symbol = symbol
         self.strategy = strategy
         self.exchange = exchange
@@ -28,15 +28,28 @@ class Advice:
         self.quantity_type = quantity_type
         self.order_type = order_type
         self.limit_price = limit_price
-        self.id = next(advice_counter) + 1
+        self.id = id if id else generate_id('advice', self)
         self.time = tick.time if hasattr(tick, 'time') else tick
 
     @classmethod
     def _construct_from_data(cls, data, _portfolio):
-        return cls(data['time'], data['strategy'], data['symbol'],
-                   data['exchange'], data['last_price'], data['quantity'],
-                   data['quantity_type'], data['order_type'],
-                   data['limit_price'])
+        advice = cls(data['time'], data['strategy'], data['symbol'],
+                     data['exchange'], data['last_price'], data['quantity'],
+                     data['quantity_type'], data['order_type'],
+                     data['limit_price'], data['id'])
+        for field in ['time']:
+            if field in data and data[field]:
+                setattr(advice, field, data[field])
+        return advice
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, val):
+        self._id = val
+        self.__class__._ids.append(val)
 
     @property
     def data(self):
@@ -51,24 +64,38 @@ class Advice:
 
 
 class OrderRequest:
+    _ids = []
+
     """
     Quantity of an asset should be in number of shares, and can be positive or
     negative depending on whether we want to LONG or SHORT a position.
 
     To exit a position, order quantity can be specified as 0.
     """
-    def __init__(self, advice, asset, base, position=0):
+    def __init__(self, advice, asset, base, position=0, id=0):
         self.advice = advice
         self.base = base
         self.asset = asset
         self.position = position
-        self.id = next(request_counter) + 1
+        self.id = id if id else generate_id('request', self)
 
     @classmethod
     def _construct_from_data(cls, data, portfolio):
-        advice = portfolio.advice_history.loc[data['advice_id']].to_dict()
+        advice = detect(portfolio.advice_history,
+                        lambda adv: adv['id'] == data['advice_id'])
         advice = Advice._construct_from_data(advice, portfolio)
-        return cls(advice, data['asset'], data['base'], data['position'])
+        request = cls(advice, data['asset'], data['base'], data['position'],
+                      data['id'])
+        return request
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, val):
+        self._id = val
+        self.__class__._ids.append(val)
 
     @property
     def advice_id(self):
@@ -111,10 +138,12 @@ class OrderRequest:
 
 
 class Order:
+    _ids = []
+
     def __init__(self, order_request, exchange, quantity, order_cost,
-                 fill_price, commission=0, commission_asset=None):
-        self._id = None
-        self.local_id = next(order_counter) + 1
+                 fill_price, commission=0, commission_asset=None, local_id=0):
+        self._id = 0
+        self._local_id = local_id if local_id else generate_id('order', self)
         self.order_request = order_request
         if exchange:
             self.order_request.advice.exchange = exchange
@@ -123,19 +152,23 @@ class Order:
         self.remaining = quantity
         self.order_cost = order_cost
         self.fill_price = fill_price
-        self._commission = commission
+        self.commission = commission
         self._commission_asset = commission_asset
         self._updated_at = None
         self._time = None
 
     @classmethod
     def _construct_from_data(cls, data, portfolio):
-        request_id = data['order_request_id']
-        request = portfolio.order_requests.loc[request_id].to_dict()
+        request = detect(portfolio.order_requests,
+                         lambda req: req['id'] == data['order_request_id'])
         request = OrderRequest._construct_from_data(request, portfolio)
-        return cls(request, data['exchange'], data['quantity'],
-                   data['order_cost'], data['fill_price'],
-                   data['commission'], data['commission_asset'])
+        order = cls(request, data['exchange'], data['quantity'],
+                    data['order_cost'], data['fill_price'], data['commission'],
+                    data['commission_asset'], data['local_id'])
+        for field in ['id', 'time', 'status', 'updated_at', 'remaining']:
+            if field in data and data[field]:
+                setattr(order, field, data[field])
+        return order
 
     @property
     def id(self):
@@ -144,6 +177,15 @@ class Order:
     @id.setter
     def id(self, value):
         self._id = value
+
+    @property
+    def local_id(self):
+        return self._local_id
+
+    @local_id.setter
+    def local_id(self, val):
+        self._local_id = val
+        self.__class__._ids.append(val)
 
     @property
     def status(self):
@@ -160,20 +202,6 @@ class Order:
     @time.setter
     def time(self, value):
         self._time = value
-
-    @property
-    def commission(self):
-        return self._commission
-
-    @commission.setter
-    def commission(self, val):
-        if hasattr(val, 'len'):
-            if len(val) == 2:
-                self._commission, self._commission_asset = val
-            else:
-                self._commission = val[0]
-        else:
-            self._commission = val
 
     @property
     def exchange(self):
@@ -199,9 +227,17 @@ class Order:
     def commission_asset(self):
         return self._commission_asset if self._commission_asset else self.base
 
+    @commission_asset.setter
+    def commission_asset(self, val):
+        self._commission_asset = val
+
     @property
     def updated_at(self):
         return self._updated_at if self._updated_at else self.time
+
+    @updated_at.setter
+    def updated_at(self, val):
+        self._updated_at = val
 
     @property
     def is_limit(self):
