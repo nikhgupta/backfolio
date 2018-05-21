@@ -355,7 +355,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
                 self.exchange.cancel_order(order.id, order.symbol)
                 self.context.notify(
                     "Cancelled open %4s order: %s for %s at %.8f" % (
-                     order.side, order.id, order.symbol,
+                     order.side, order.id, order.asset,
                      order.fill_price), formatted=True)
             except OrderNotFound:
                 pass
