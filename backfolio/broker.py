@@ -203,8 +203,9 @@ class SimulatedBroker(AbstractBroker):
         for order in self.portfolio.orders:
             if filter_fn and not filter_fn(order):
                 continue
-            if order.is_open():
-                order.mark_unfilled()
+            if order['status'] == 'open':
+                order = Order.__construct_from_data(order, self.portfolio)
+                order.mark_cancelled()
                 self.events.put(OrderUnfilledEvent(order))
 
     # TODO: instead allow passing a % which will be added to opening price
@@ -260,6 +261,10 @@ class SimulatedBroker(AbstractBroker):
         # if the request has a max order size defined with it, limit to that
         if request.max_order_size and abs(cost) > request.max_order_size:
             cost = request.max_order_size * (-1 if cost < 0 else 1)
+            quantity = cost/price
+
+        if cost > 0 and cost > self.account.cash:
+            cost = self.account.cash * 0.98
             quantity = cost/price
 
         # now that we have the cost
@@ -352,6 +357,8 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
                      order['price']), formatted=True)
             except ccxt.base.errors.OrderNotFound:
                 pass
+            except Exception as e:
+                self.context.notify_error(e)
 
     def reject_order(self, order, reason):
         order.mark_rejected()
@@ -430,7 +437,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
 
             try:
                 resp = self.exchange.fetch_order(order.id, symbol)
-            except OrderNotFound:
+            except Exception as e:
                 resp = {'status': 'unknown', 'remaining': 0,
                         'datetime': datetime.utcnow()}
 

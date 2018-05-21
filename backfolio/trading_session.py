@@ -1,4 +1,5 @@
 import time
+import ccxt
 import traceback
 from datetime import datetime
 from copy import deepcopy
@@ -409,7 +410,11 @@ class TradingSession:
             order = None
             try:
                 order = self.broker.execute_order_after_creation(event)
+            except ccxt.base.errors.InsufficientFunds:
+                self.notify("Insufficient funds for Order: %s" % event,
+                            formatted=True)
             except Exception as e:
+                self.notify("Failed Order: %s" % event, formatted=True)
                 self.notify_error(e)
             else:
                 if order:
