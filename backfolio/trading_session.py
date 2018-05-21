@@ -409,20 +409,25 @@ class TradingSession:
             order = self.broker.execute_order_after_creation(event)
             if order:
                 self.portfolio.record_created_order(event, order)
+                self.account.lock_cash_for_order_if_required(event, order)
             self._run_hook('after_order_created_done', event)
 
         elif type(event) == OrderFilledEvent:
             self._run_hook('after_order_filled', event)
             self.portfolio.record_filled_order(event)
+            self.account.update_after_order_filled(event)
+            self.portfolio.update_commission_paid(event)
             self._run_hook('after_order_filled_done', event)
 
         elif type(event) == OrderUnfilledEvent:
             self._run_hook('after_order_unfilled', event)
+            self.account.update_after_order_unfilled(event)
             self.portfolio.record_unfilled_order(event)
             self._run_hook('after_order_unfilled_done', event)
 
         elif type(event) == OrderRejectedEvent:
             self._run_hook('after_order_rejected', event)
+            self.account.update_after_order_rejected(event)
             self.portfolio.record_rejected_order(event)
             self._run_hook('after_order_rejected_done', event)
         self._run_hook('after_any_event_done')

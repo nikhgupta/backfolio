@@ -159,7 +159,7 @@ class SimulatedBroker(AbstractBroker):
         cash, cost = self.account.cash, order.order_cost
         quantity, price = order.quantity, order.fill_price
         comm = order.commission
-        comm_asset_balance = self.account.balance[order.commission_asset]
+        comm_asset_balance = self.account.free[order.commission_asset]
         symbol = self.datacenter.assets_to_symbol(order.asset, order.base)
         symbol_data = fast_xs(self._future_tick_data, symbol)
 
@@ -353,7 +353,9 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             if not order.id or isnan(order.id) or not order.is_open:
                 continue
             try:
-                self.exchange.cancel_order(order.id, order.symbol)
+                symbol = self.datacenter.assets_to_symbol(
+                    order.asset, order.base)
+                self.exchange.cancel_order(order.id, symbol)
                 self.context.notify(
                     "Cancelled open %4s order: %s for %s at %.8f" % (
                      order.side, order.id, order.asset,

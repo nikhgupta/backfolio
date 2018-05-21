@@ -18,25 +18,29 @@ class AbstractAccount(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        self.balance = {}
+        self.free = {}
+        self.locked = {}
+        self.total = {}
         self.last_update_at = None
         self.session_fields = []
 
     def __repr__(self):
-        bal = dict([key, val] for key, val in self.balance.items() if val > 0)
+        bal = dict([key, val] for key, val in self.total.items() if val > 0)
         return "%s(%s)" % (self.__class__.__name__, bal)
 
     def reset(self, context):
         """ Routine to run when trading session is resetted. """
         self.context = context
-        self.balance = {}
+        self.free = {}
+        self.locked = {}
+        self.total = {}
         self.last_update_at = None
-        self.balance_at_ticks = []
         self.get_balance(refresh=True)
 
     @property
     def cash(self):
-        return self.balance[self.context.base_currency]
+        self._update_balance()
+        return self.free[self.context.base_currency]
 
     @property
     def equity(self):
@@ -77,9 +81,11 @@ class AbstractAccount(object):
         """
         expiry = datetime.datetime.utcnow() - self.datacenter.timeframe_delta
         if refresh or (self.last_update_at and self.last_update_at < expiry):
-            self.balance = self._update_balance()
+            self.free, self.locked, self.total = self._update_balance()
             self.last_update_at = datetime.datetime.utcnow()
-        return self.balance[symbol] if symbol else self.balance
+
+    def lock_cash_for_order_if_required(self, event, order):
+        pass
 
     @abstractmethod
     def _update_balance(self):
@@ -99,23 +105,59 @@ class SimulatedAccount(AbstractAccount):
         self.initial_balance = initial_balance
 
     def _update_balance(self):
-        if not self.balance:
-            self.balance = self.initial_balance.copy()
+        if not self.free:
+            self.free = self.initial_balance.copy()
+            self.total = self.free.copy()
         for sym in self.datacenter.all_symbols():
             asset, base = self.datacenter.symbol_to_assets(sym)
-            if asset not in self.balance:
-                self.balance[asset] = 0
-            if base not in self.balance:
-                self.balance[base] = 0
-        return self.balance
+            self.locked[asset] = 0
+            self.locked[base] = 0
+            if asset not in self.free:
+                self.free[asset] = 0
+            if base not in self.free:
+                self.free[base] = 0
+            if asset not in self.total:
+                self.total[asset] = 0
+            if base not in self.total:
+                self.total[base] = 0
+        return (self.free, self.locked, self.total)
 
-    def update_after_order(self, order):
+    def lock_cash_for_order_if_required(self, _event, order):
+        if order.quantity > 0:
+            self.free[order.base] -= order.order_cost
+            self.locked[order.base] += order.order_cost
+        else:
+            self.free[order.asset] -= abs(order.quantity)
+            self.locked[order.asset] += abs(order.quantity)
+
+    def update_after_order_filled(self, event):
         """ Update account balances after an order has been filled """
-        self.balance[order.base] -= order.order_cost
-        self.balance[order.commission_asset] -= order.commission
-        if order.asset not in self.balance:
-            self.balance[order.asset] = 0
-        self.balance[order.asset] += order.quantity
+        order = event.item
+        self.free[order.commission_asset] -= order.commission
+        self.total[order.commission_asset] -= order.commission
+
+        if order.quantity > 0:
+            self.total[order.base] -= order.order_cost
+            self.locked[order.base] -= order.order_cost
+            self.free[order.asset] += order.quantity
+            self.total[order.asset] += order.quantity
+        else:
+            self.total[order.asset] -= abs(order.quantity)
+            self.locked[order.asset] -= abs(order.quantity)
+            self.free[order.base] += abs(order.order_cost)
+            self.total[order.base] += abs(order.order_cost)
+
+    def update_after_order_unfilled(self, event):
+        order = event.item
+        if order.quantity > 0:
+            self.free[order.base] += order.order_cost
+            self.locked[order.base] -= order.order_cost
+        else:
+            self.free[order.asset] += abs(order.quantity)
+            self.locked[order.asset] -= abs(order.quantity)
+
+    def update_after_order_rejected(self, event):
+        self.update_after_order_unfilled(event)
 
 
 class CcxtExchangeAccount(AbstractAccount):
@@ -123,16 +165,16 @@ class CcxtExchangeAccount(AbstractAccount):
         super().__init__()
         self.exchange = getattr(ccxt, exchange)(params)
 
-    @property
-    def cash(self):
-        response = self.exchange.fetch_balance()
-        return response[self.context.base_currency]['free']
-
     def _update_balance(self):
         response = self.exchange.fetch_balance()
         for d in response['info']['balances']:
-            self.balance[d['asset']] = float(d['free']) + float(d['locked'])
-        return self.balance
+            self.free[d['asset']] = float(d['free'])
+            self.locked[d['asset']] = float(d['locked'])
+            self.total[d['asset']] = float(d['free']) + float(d['locked'])
+        return (self.free, self.locked, self.total)
 
-    def update_after_order(self, order):
+    def update_after_order(self, _event):
+        pass
+
+    def lock_cash_for_order_if_required(self, event, order):
         pass

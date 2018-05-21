@@ -110,7 +110,7 @@ class BasePortfolio(object):
         time = tick_event.item.time
         data = tick_event.item.history
 
-        for asset, quantity in self.account.balance.items():
+        for asset, quantity in self.account.total.items():
             symbol = self.datacenter.assets_to_symbol(asset)
             if asset == self.context.base_currency:
                 equity[asset] = self.cash
@@ -121,7 +121,7 @@ class BasePortfolio(object):
 
         total_equity = sum([v for k, v in equity.items()])
         self.asset_equity.append({**equity, **{"time": time}})
-        self.positions.append({**self.account.balance, **{"time": time}})
+        self.positions.append({**self.account.total, **{"time": time}})
         self.timeline.append({"time": time, "equity": total_equity,
                               "cash": self.cash})
 
@@ -132,8 +132,8 @@ class BasePortfolio(object):
         position = 0
         advice = advice_event.item
         asset, base = self.datacenter.symbol_to_assets(advice.symbol)
-        if asset in self.account.balance:
-            position = self.account.balance[asset]
+        if asset in self.account.total:
+            position = self.account.total[asset]
         request = OrderRequest(advice, asset, base, position)
         self.events.put(OrderRequestedEvent(request))
         return request
@@ -146,10 +146,7 @@ class BasePortfolio(object):
         self.orders.append(item.data)
 
     def record_filled_order(self, order_filled_event):
-        order = order_filled_event.item
-        self.filled_orders.append(order.data)
-        self.account.update_after_order(order)
-        self.update_commission_paid(order.commission, order.commission_asset)
+        self.filled_orders.append(order_filled_event.data)
 
     def record_rejected_order(self, rejected_order_event):
         self.rejected_orders.append(rejected_order_event.data)
@@ -157,16 +154,16 @@ class BasePortfolio(object):
     def record_unfilled_order(self, unfilled_order_event):
         self.unfilled_orders.append(unfilled_order_event.data)
 
-    def update_commission_paid(self, comm, comm_asset):
+    def update_commission_paid(self, event):
         if not len(self.timeline):
             raise ValueError("Commission paid before the first tick? WTF!")
 
         comm_paid = 0
         if 'commission_paid' in self.timeline[-1]:
             comm_paid = self.timeline[-1]['commission_paid']
-        comm_paid += comm
+        comm_paid += event.item.commission
         self.timeline[-1]['commission_paid'] = comm_paid
-        self.timeline[-1]['commission_asset'] = comm_asset
+        self.timeline[-1]['commission_asset'] = event.item.commission_asset
 
     def trading_session_tick_complete(self):
         pass
