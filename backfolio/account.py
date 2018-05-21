@@ -87,6 +87,15 @@ class AbstractAccount(object):
     def lock_cash_for_order_if_required(self, event, order):
         pass
 
+    def update_after_order_rejected(self, event):
+        pass
+
+    def update_after_order_filled(self, event):
+        pass
+
+    def update_after_order_unfilled(self, event):
+        pass
+
     @abstractmethod
     def _update_balance(self):
         """ Refresh/update account balance """
@@ -172,9 +181,3 @@ class CcxtExchangeAccount(AbstractAccount):
             self.locked[d['asset']] = float(d['locked'])
             self.total[d['asset']] = float(d['free']) + float(d['locked'])
         return (self.free, self.locked, self.total)
-
-    def update_after_order(self, _event):
-        pass
-
-    def lock_cash_for_order_if_required(self, event, order):
-        pass
