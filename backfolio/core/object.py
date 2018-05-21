@@ -256,6 +256,10 @@ class Order:
         return self.order_type == 'MARKET'
 
     @property
+    def side(self):
+        return 'buy' if self.quantity > 0 else 'sell'
+
+    @property
     def is_buy(self):
         return self.quantity > 0
 

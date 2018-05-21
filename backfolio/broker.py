@@ -10,6 +10,7 @@ from .core.event import (
     OrderUnfilledEvent,
     OrderCreatedEvent
 )
+from ccxt.base.errors import InsufficientFunds, OrderNotFound
 
 
 class AbstractBroker(object):
@@ -345,16 +346,18 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         Polling frequency should be set to above 2-3 mins for avoiding bans.
         For example, on binance this call is rate-limited to 1 per 154sec.
         """
-        self.exchange.options["warnOnFetchOpenOrdersWithoutSymbol"] = False
-        orders = self.exchange.fetch_open_orders()
-        for order in orders:
+        orders = self.portfolio.orders
+        for idx, order in enumerate(orders):
+            order = Order._construct_from_data(order, self.portfolio)
+            if not order.id or isnan(order.id) or not order.is_open:
+                continue
             try:
-                self.exchange.cancel_order(order['id'], order['symbol'])
+                self.exchange.cancel_order(order.id, order.symbol)
                 self.context.notify(
                     "Cancelled open %4s order: %s for %s at %.8f" % (
-                     order['side'], order['id'], order['symbol'],
-                     order['price']), formatted=True)
-            except ccxt.base.errors.OrderNotFound:
+                     order.side, order.id, order.symbol,
+                     order.fill_price), formatted=True)
+            except OrderNotFound:
                 pass
             except Exception as e:
                 self.context.notify_error(e)
@@ -391,7 +394,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             elif order.order_type == 'MARKET' and quantity < 0:
                 resp = self.exchange.create_market_sell_order(
                     symbol, abs(quantity))
-        except ccxt.base.errors.InsufficientFunds:
+        except InsufficientFunds:
             message = "Insufficient funds for Order: %s, Q:%.8f, P:%.8f" % (
                 order, quantity, price)
             self.events.put(OrderRejectedEvent(order, message))
