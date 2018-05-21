@@ -17,9 +17,9 @@ class Tick:
 class Advice:
     _ids = []
 
-    def __init__(self, tick, strategy, symbol, exchange, last_price,
+    def __init__(self, strategy, symbol, exchange, last_price,
                  quantity, quantity_type, order_type, limit_price=None,
-                 id=0):
+                 max_cost=0, time=None, id=0):
         self.symbol = symbol
         self.strategy = strategy
         self.exchange = exchange
@@ -29,14 +29,17 @@ class Advice:
         self.order_type = order_type
         self.limit_price = limit_price
         self.id = id if id else generate_id('advice', self)
-        self.time = tick.time if hasattr(tick, 'time') else tick
+        self.time = time
+        self.max_cost = max_cost
 
     @classmethod
     def _construct_from_data(cls, data, _portfolio):
-        advice = cls(data['time'], data['strategy'], data['symbol'],
+        advice = cls(data['strategy'], data['symbol'],
                      data['exchange'], data['last_price'], data['quantity'],
                      data['quantity_type'], data['order_type'],
-                     data['limit_price'], data['id'])
+                     data['limit_price'], data['time'], data['id'])
+        if 'max_cost' in data:
+            advice.max_cost = data['max_cost']
         for field in ['time']:
             if field in data and data[field]:
                 setattr(advice, field, data[field])
@@ -56,7 +59,7 @@ class Advice:
         return {"id": self.id, "time": self.time, "symbol": self.symbol,
                 "exchange": self.exchange, "strategy": self.strategy,
                 "last_price": self.last_price, "quantity": self.quantity,
-                "quantity_type": self.quantity_type,
+                "quantity_type": self.quantity_type, "max_cost": self.max_cost,
                 "order_type": self.order_type, "limit_price": self.limit_price}
 
     def __repr__(self):
@@ -126,12 +129,17 @@ class OrderRequest:
         return self.advice.limit_price
 
     @property
+    def max_order_size(self):
+        return self.advice.max_cost
+
+    @property
     def data(self):
         return {"id": self.id, "time": self.time, "advice_id": self.advice_id,
                 "asset": self.asset, "base": self.base,
                 "quantity": self.quantity, "quantity_type": self.quantity_type,
                 "order_type": self.order_type, "position": self.position,
-                "limit_price": self.limit_price}
+                "limit_price": self.limit_price,
+                "max_order_size": self.max_order_size}
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.data)

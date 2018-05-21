@@ -1,4 +1,5 @@
 import time
+import traceback
 from datetime import datetime
 from copy import deepcopy
 from os.path import join, expanduser
@@ -201,13 +202,19 @@ class TradingSession:
         if self.debug:
             print(message)
 
-    def notify(self, message, formatted=True):
-        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    def notify(self, message, formatted=True, now=None):
+        if now is None:
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.log("[%s]: %s" % (now, message))
         method = 'formatted_notify' if formatted else 'notify'
         for notifier in self.notifiers:
             if hasattr(notifier, method):
-                getattr(notifier, method)(message)
+                getattr(notifier, method)(message, now)
+
+    def notify_error(self, err):
+        str = "[%s] - %s" % (err.__class__.__name__, err.__str__())
+        str += "\n" + traceback.format_exc()
+        self.notify(str, formatted=True)
 
     def backtesting(self):
         return self.mode == 'backtest'
@@ -380,6 +387,8 @@ class TradingSession:
                 return
             self._run_hook('after_tick_update', event)
             self.portfolio.update_portfolio_value_at_tick(event)
+            self.strategy.tick = event.item
+            self.strategy.data = event.item.history.dropna()
             self.strategy.advice_investments_at_tick(event)
             self._run_hook('after_tick_update_done', event)
 
@@ -397,9 +406,15 @@ class TradingSession:
 
         elif type(event) == OrderCreatedEvent:
             self._run_hook('after_order_created', event)
-            order = self.broker.execute_order_after_creation(event)
-            self.portfolio.record_created_order(event, order)
-            self._run_hook('after_order_created_done', event)
+            order = None
+            try:
+                order = self.broker.execute_order_after_creation(event)
+            except Exception as e:
+                self.notify_error(e)
+            else:
+                if order:
+                    self.portfolio.record_created_order(event, order)
+                self._run_hook('after_order_created_done', event)
 
         elif type(event) == OrderFilledEvent:
             self._run_hook('after_order_filled', event)
@@ -491,6 +506,12 @@ class PaperTradingSession(TradingSession):
 
     def _should_reloop(self):
         return self.poll_frequency is not None
+
+    def run(self, *args, **kwargs):
+        try:
+            super().run(*args, **kwargs)
+        except Exception as e:
+            self.notify_error(e)
 
 
 class LiveTradingSession(PaperTradingSession):

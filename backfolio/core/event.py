@@ -58,7 +58,6 @@ class OrderCreatedEvent(BaseEvent):
     """
     Event emitted when a new order is created by the broker for an asset.
     """
-
     def __init__(self, order):
         super().__init__(order, priority=4)
 

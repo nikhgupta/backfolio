@@ -161,7 +161,7 @@ class CashAndEquityReporter(AbstractReporter):
         if 'commission_paid' in data:
             message += ", CommPaid: %.8f %s"
             message %= (data['commission_paid'], comm)
-        self.context.notify(message, formatted=True)
+        self.context.notify(message, formatted=True, now=data['time'])
 
     def _plot_with_averages(self, axis, name, data):
         axis.plot(data, label=name)
@@ -193,15 +193,16 @@ class OrdersReporter(AbstractReporter):
 
     def generate_summary_report(self):
         total = len(self.portfolio.orders)
-        closed = len(self.portfolio.closed_orders)/total*100
-        rejected = len(self.portfolio.rejected_orders)/total*100
-        open = len(self.portfolio.open_orders)/total*100
-        ignored = 100 - (closed + rejected + open)
-        each_tick = total / len(self.portfolio.timeline)
+        if total:
+            filled = len(self.portfolio.filled_orders)/total*100
+            rejected = len(self.portfolio.rejected_orders)/total*100
+            unfilled = len(self.portfolio.unfilled_orders)/total*100
+            ignored = 100 - (filled + rejected + unfilled)
+            each_tick = total / len(self.portfolio.timeline)
 
-        print("Order Placement Summary")
-        print("=======================")
-        print(("Total: %d orders, Per Tick: %.2f orders\n" +
-               "Closed: %.2f%%, Open: %.2f%%, " +
-               "Rejected: %.2f%%, Ignored: %.2f%%\n") % (
-                  total, each_tick, closed, open, rejected, ignored))
+            print("Order Placement Summary")
+            print("=======================")
+            print(("Total: %d orders, Per Tick: %.2f orders\n" +
+                   "Filled: %.2f%%, Unfilled: %.2f%%, " +
+                   "Rejected: %.2f%%, Ignored: %.2f%%\n") % (
+                      total, each_tick, filled, unfilled, rejected, ignored))

@@ -79,11 +79,14 @@ class BasePortfolio(object):
     @property
     def equity(self):
         if self._converted_to_pandas:
-            return self.timeline.equity.iloc[-1]
+            equity = self.timeline.equity.iloc[-1]
         elif len(self.timeline):
-            return self.timeline[-1]['equity']
+            equity = self.timeline[-1]['equity']
         else:
-            return np.nan
+            equity = np.nan
+        if hasattr(self.strategy, 'transform_account_equity'):
+            equity = self.strategy.transform_account_equity(equity)
+        return equity
 
     @property
     def equity_per_asset(self):
@@ -173,14 +176,14 @@ class BasePortfolio(object):
         if self._converted_to_pandas:
             return self.orders[self.orders.status == 'closed']
         else:
-            return [o for o in self.orders if o.status == 'closed']
+            return [o for o in self.orders if o['status'] == 'closed']
 
     @property
     def open_orders(self):
         if self._converted_to_pandas:
             return self.orders[self.orders.status == 'open']
         else:
-            return [o for o in self.orders if o.status == 'open']
+            return [o for o in self.orders if o['status'] == 'open']
 
     def trading_session_complete(self):
         # record advices

@@ -64,7 +64,7 @@ class BaseStrategy(object):
         return self.context.events
 
     def log(self, *args, **kwargs):
-        self.log(*args, **kwargs)
+        self.context.log(*args, **kwargs)
 
     def notify(self, *args, **kwargs):
         return self.context.notify(*args, **kwargs)
@@ -75,28 +75,29 @@ class BaseStrategy(object):
         raise NotImplementedError("Strategy must implement \
                                   `advice_investments()`")
 
-    def _order_target(self, tick, symbol, quantity, quantity_type,
-                      order_type='MARKET', limit_price=None, exchange=None):
+    def _order_target(self, symbol, quantity, quantity_type,
+                      order_type='MARKET', limit_price=None, max_cost=0,
+                      exchange=None):
         name = self.__class__.__name__
-        if symbol not in tick.history.index:
-            self.context.log("Ignoring order for: %s as it was not found in \
-                             current tick" % symbol)
+        if symbol not in self.tick.history.index:
+            # self.context.log("Ignoring order for: %s as it was not found in \
+            #                   current tick" % symbol)
             return
-        last = fast_xs(tick.history, symbol)['close']
-        advice = Advice(tick, name, symbol, exchange, last,
-                        quantity, quantity_type, order_type, limit_price)
+        last = fast_xs(self.tick.history, symbol)['close']
+        advice = Advice(name, symbol, exchange, last, quantity, quantity_type,
+                        order_type, limit_price, max_cost, self.tick.time)
         self.events.put(StrategyAdviceEvent(advice))
         return advice
 
-    def order_target_percent(self, tick, symbol, quantity,
-                             order_type='MARKET', limit_price=None):
-        return self._order_target(tick, symbol, quantity, 'PERCENT',
-                                  order_type, limit_price)
+    def order_target_percent(self, symbol, quantity, order_type='MARKET',
+                             limit_price=None, max_cost=0):
+        return self._order_target(symbol, quantity, 'PERCENT',
+                                  order_type, limit_price, max_cost)
 
-    def order_target_amount(self, tick, symbol, quantity,
-                            order_type='MARKET', limit_price=None):
-        return self._order_target(tick, symbol, quantity, 'SHARE',
-                                  order_type, limit_price)
+    def order_target_amount(self, symbol, quantity, order_type='MARKET',
+                            limit_price=None, max_cost=0):
+        return self._order_target(symbol, quantity, 'SHARE',
+                                  order_type, limit_price, max_cost)
 
 
 class BuyAndHoldStrategy(BaseStrategy):
@@ -133,11 +134,9 @@ class BuyAndHoldStrategy(BaseStrategy):
         We sell our assets first so that we do have sufficient liquidity.
         Afterwards, we will issue a buy order.
         """
-        tick = tick_event.item
-        data = tick.history.dropna()
-        new_symbols = [s for s in data.index if s not in self.added]
+        new_symbols = [s for s in self.data.index if s not in self.added]
         self.pending.append(new_symbols)
-        self.data_store.append(data)
+        self.data_store.append(self.data)
         for sym in new_symbols:
             self.added.append(sym)
 
@@ -161,14 +160,14 @@ class BuyAndHoldStrategy(BaseStrategy):
             symbol = self.datacenter.assets_to_symbol(asset)
             if symbol not in data.index:
                 continue
-            self.order_target_percent(tick, symbol, n, 'MARKET')
+            self.order_target_percent(symbol, n, 'MARKET')
 
 
 # TODO: buy commission asset if we get low on it
 class EwUCRPStrategy(BaseStrategy):
     """
     A simple strategy which invests our capital equally amongst all assets
-    available on an exchange, and rebalances it daily.
+    available on an exchange, and rebalances it on each tick.
 
     In principle, a EwUCRP (Equally-weighted Uniformly Constant Rebalanced
     Portfolio) is hard to beat, which makes this strategy an excellent
@@ -186,9 +185,7 @@ class EwUCRPStrategy(BaseStrategy):
         self.session_fields += ['bought']
 
     def advice_investments_at_tick(self, tick_event):
-        tick = tick_event.item
-        data = tick.history.dropna()
-        n = 100./(1+len(data))
+        n = 100./(1+len(self.data))
 
         rebalanced = self.account.equity*n/100
         equity = self.portfolio.equity_per_asset
@@ -199,6 +196,6 @@ class EwUCRPStrategy(BaseStrategy):
         rebalance += [k for k, v in equity.items() if v < rebalanced]
         for asset in rebalance:
             symbol = self.datacenter.assets_to_symbol(asset)
-            self.order_target_percent(tick, symbol, n, 'MARKET')
+            self.order_target_percent(symbol, n, 'MARKET')
             if symbol not in self.bought:
                 self.bought.append(symbol)
