@@ -1,5 +1,4 @@
 import time
-import ccxt
 import traceback
 from datetime import datetime
 from copy import deepcopy

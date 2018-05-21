@@ -172,7 +172,7 @@ class SimulatedBroker(AbstractBroker):
             # of rejected orders, so we will just ignore this case.
             return
             # event = OrderRejectedEvent(order, 'Cost < Min Order Size')
-        elif cost > cash:
+        elif cost >= cash:
             order.mark_rejected()
             event = OrderRejectedEvent(order, 'Insufficient Cash: %0.8f \
                                        (cost) vs %0.8f (cash)' % (cost, cash))
@@ -263,9 +263,10 @@ class SimulatedBroker(AbstractBroker):
             cost = request.max_order_size * (-1 if cost < 0 else 1)
             quantity = cost/price
 
-        if cost > 0 and cost > self.account.cash:
-            cost = self.account.cash * 0.98
-            quantity = cost/price
+        # finally, allow the strategy to modify order cost, quantity or price
+        if hasattr(self.strategy, 'transform_order_calculation'):
+            cost, quantity, price = self.strategy.transform_order_calculation(
+                request, cost, quantity, price)
 
         # now that we have the cost
         return (round(quantity, 8), round(cost, 8), round(price, 8))
