@@ -123,6 +123,11 @@ class CcxtExchangeAccount(AbstractAccount):
         super().__init__()
         self.exchange = getattr(ccxt, exchange)(params)
 
+    @property
+    def cash(self):
+        response = self.exchange.fetch_balance()
+        return response[self.context.base_currency]['free']
+
     def _update_balance(self):
         response = self.exchange.fetch_balance()
         for d in response['info']['balances']:
