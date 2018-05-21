@@ -2,7 +2,6 @@ import ccxt
 from math import isnan
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
-from ccxt.base.errors import OrderNotFound
 from .core.utils import fast_xs
 from .core.object import Order
 from .core.event import (
@@ -377,6 +376,33 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
                       0, self.context.commission_asset)
         self.context.events.put(OrderCreatedEvent(order))
 
+    def __place_order_on_exchange(self, order, symbol, quantity, price):
+        resp = None
+        try:
+            if order.order_type == 'LIMIT' and quantity > 0:
+                resp = self.exchange.create_limit_buy_order(
+                    symbol, quantity, price)
+            elif order.order_type == 'LIMIT' and quantity < 0:
+                resp = self.exchange.create_limit_sell_order(
+                    symbol, abs(quantity), price)
+            elif order.order_type == 'MARKET' and quantity > 0:
+                resp = self.exchange.create_market_buy_order(
+                    symbol, quantity)
+            elif order.order_type == 'MARKET' and quantity < 0:
+                resp = self.exchange.create_market_sell_order(
+                    symbol, abs(quantity))
+        except ccxt.base.errors.InsufficientFunds:
+            message = "Insufficient funds for Order: %s, Q:%.8f, P:%.8f" % (
+                order, quantity, price)
+            self.events.put(OrderRejectedEvent(order, message))
+            self.notify(message, formatted=True)
+        except Exception as e:
+            self.notify("Failed Order: %s, Q:%0.8f, P:%0.8f" % (
+                order, quantity, price), formatted=True)
+            self.notify_error(e)
+        finally:
+            return resp
+
     def execute_order_after_creation(self, order_created_event, exchange=None):
         order = order_created_event.item
         price = order.fill_price
@@ -401,18 +427,9 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             return self.reject_order(order, 'Cost < min. Order Size')
 
         # create order on exchange
-        if order.order_type == 'LIMIT' and quantity > 0:
-            resp = self.exchange.create_limit_buy_order(
-                symbol, quantity, price)
-        elif order.order_type == 'LIMIT' and quantity < 0:
-            resp = self.exchange.create_limit_sell_order(
-                symbol, abs(quantity), price)
-        elif order.order_type == 'MARKET' and quantity > 0:
-            resp = self.exchange.create_market_buy_order(
-                symbol, quantity)
-        elif order.order_type == 'MARKET' and quantity < 0:
-            resp = self.exchange.create_market_sell_order(
-                symbol, abs(quantity))
+        resp = self.__place_order_on_exchange(order, symbol, quantity, price)
+        if not resp:
+            return
 
         cost = resp['cost'] if resp['cost'] else resp['amount']*resp['price']
         comm = resp['fee']['cost'] if resp['fee'] else 0

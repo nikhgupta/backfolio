@@ -407,19 +407,10 @@ class TradingSession:
 
         elif type(event) == OrderCreatedEvent:
             self._run_hook('after_order_created', event)
-            order = None
-            try:
-                order = self.broker.execute_order_after_creation(event)
-            except ccxt.base.errors.InsufficientFunds:
-                self.notify("Insufficient funds for Order: %s" % event,
-                            formatted=True)
-            except Exception as e:
-                self.notify("Failed Order: %s" % event, formatted=True)
-                self.notify_error(e)
-            else:
-                if order:
-                    self.portfolio.record_created_order(event, order)
-                self._run_hook('after_order_created_done', event)
+            order = self.broker.execute_order_after_creation(event)
+            if order:
+                self.portfolio.record_created_order(event, order)
+            self._run_hook('after_order_created_done', event)
 
         elif type(event) == OrderFilledEvent:
             self._run_hook('after_order_filled', event)
