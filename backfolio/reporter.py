@@ -92,8 +92,20 @@ class BaseReporter(AbstractReporter):
                                             ** (1/len(series))) - 1
             df.loc['annual_return', name] = ep.annual_return(
                 series.returns, period='daily', annualization=ticks)
-            df.loc['cagr', name] = ep.cagr(series.returns, period='daily',
-                                           annualization=ticks)
+
+            if self.account._extra_capital:
+                if name == 'portfolio':
+                    equity = series.equity + self.account._extra_capital
+                    ret = (equity/equity.shift(1) - 1).fillna(0)
+                    cumret = (1+ret).cumprod()
+                else:
+                    equity, ret, cumret = (
+                        series.equity, series.returns, series.cum_returns)
+                df.loc['overall_growth', name] = cumret.iloc[-1]
+                df.loc['daily_growth', name] = (cumret.iloc[-1]
+                                                ** (1/len(series))) - 1
+                df.loc['annual_growth', name] = ep.annual_return(
+                    ret, period='daily', annualization=ticks)
 
             # risk assessment of the strategy
             df.loc['max_drawdown', name] = ep.max_drawdown(series.returns)

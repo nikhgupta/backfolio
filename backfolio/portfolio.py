@@ -113,7 +113,7 @@ class BasePortfolio(object):
         for asset, quantity in self.account.total.items():
             symbol = self.datacenter.assets_to_symbol(asset)
             if asset == self.context.base_currency:
-                equity[asset] = self.cash
+                equity[asset] = self.account.cash
             elif symbol in data.index:
                 equity[asset] = quantity * data.open[symbol]
             else:
@@ -123,7 +123,7 @@ class BasePortfolio(object):
         self.asset_equity.append({**equity, **{"time": time}})
         self.positions.append({**self.account.total, **{"time": time}})
         self.timeline.append({"time": time, "equity": total_equity,
-                              "cash": self.cash})
+                              "cash": self.account.cash})
 
     def record_advice_from_strategy(self, advice_event):
         self.advice_history.append(advice_event.data)

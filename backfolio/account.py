@@ -17,11 +17,13 @@ class AbstractAccount(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, initial_capital=None):
         self.free = {}
         self.locked = {}
         self.total = {}
         self.last_update_at = None
+        self.initial_capital = initial_capital
+        self._extra_capital = None
         self.session_fields = []
 
     def __repr__(self):
@@ -37,10 +39,26 @@ class AbstractAccount(object):
         self.last_update_at = None
         self.get_balance(refresh=True)
 
+    def _adjust_for_extra_capital(self):
+        if self._extra_capital is not None:
+            return
+
+        if not self.initial_capital:
+            self._extra_capital = 0
+            return
+
+        timeline = self.portfolio.timeline
+        if len(timeline) > 0:
+            self._extra_capital = timeline[0]['equity'] - self.initial_capital
+            timeline[0]['equity'] -= self._extra_capital
+            timeline[0]['cash'] -= self._extra_capital
+
     @property
     def cash(self):
         self._update_balance()
-        return self.free[self.context.base_currency]
+        cash = self.free[self.context.base_currency]
+        self._adjust_for_extra_capital()
+        return cash - self._extra_capital if self._extra_capital else cash
 
     @property
     def equity(self):
@@ -109,8 +127,8 @@ class AbstractAccount(object):
 
 
 class SimulatedAccount(AbstractAccount):
-    def __init__(self, initial_balance={}):
-        super().__init__()
+    def __init__(self, *args, initial_balance={}, **kwargs):
+        super().__init__(*args, **kwargs)
         self.initial_balance = initial_balance
 
     def _update_balance(self):
@@ -170,8 +188,8 @@ class SimulatedAccount(AbstractAccount):
 
 
 class CcxtExchangeAccount(AbstractAccount):
-    def __init__(self, exchange, params={}):
-        super().__init__()
+    def __init__(self, exchange, *args, params={}, **kwargs):
+        super().__init__(*args, **kwargs)
         self.exchange = getattr(ccxt, exchange)(params)
 
     def _update_balance(self):
