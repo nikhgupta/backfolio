@@ -52,10 +52,16 @@ class BaseDatacenter(object):
         self.session_fields = []
         self.fill = fill
 
-    def reset(self, context):
+    def reset(self, context=None, root_dir=None):
         """ Routine to run when trading session is resetted. """
         self.context = context
-        self._data_dir = join(context.root_dir, "data", self.name)
+        if hasattr(context, "root_dir") and not root_dir:
+            root_dir = context.root_dir
+
+        if not root_dir:
+            raise ValueError("You must specify `root_dir` for `reset()`.")
+
+        self._data_dir = join(root_dir, "data", self.name)
         make_path(self._data_dir)
 
         self._data_seen = []
@@ -64,7 +70,12 @@ class BaseDatacenter(object):
         self._current_real = None
         self._continue_backtest = True
         self.markets = self._selected_symbols.copy()
-        self.reload_history(refresh=self.context.refresh_history)
+        if context:
+            self.reload_history(refresh=self.context.refresh_history)
+
+    @property
+    def refresh_history(self):
+        return self.context.refresh_history if self.context else True
 
     @property
     def name(self):
@@ -129,6 +140,12 @@ class BaseDatacenter(object):
     @property
     def events(self):
         return self.context.events
+
+    def log(self, message):
+        if self.context:
+            return self.context.log(message)
+        else:
+            print(message)
 
     @abstractmethod
     def assets_to_symbol(self, *_args):
@@ -275,11 +292,11 @@ class BaseDatacenter(object):
 
         # in case, we do not have data locally, fetch all symbols for next step
         if self.markets and not refresh:
-            self.context.log("Loaded history data from local cache.")
+            self.log("Loaded history data from local cache.")
         else:
             self.all_symbols()
             if not refresh:
-                self.context.log("No history data found on this system.")
+                self.log("No history data found on this system.")
 
         # download/refresh data for symbols, if required
         bar = pyprind.ProgPercent(len(self.markets))
@@ -298,7 +315,7 @@ class BaseDatacenter(object):
             try:
                 cdf = self.refresh_history_for_symbol(symbol, cdf)
             except Exception as e:
-                self.context.log("Encountered error when downloading data \
+                self.log("Encountered error when downloading data \
                                   for symbol %s:\n%s" % (symbol, str(e)))
                 cdf = None
 
@@ -332,9 +349,11 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         return "crypto/%s/%s" % (self.exchange.name, self.timeframe)
 
     def load_markets(self):
-        if not self._market_data:
-            self._market_data = self.exchange.load_markets(
-                self.context.refresh_history)
+        if not self._market_data and self.refresh_history:
+            self._market_data = self.exchange.load_markets(True)
+        else:
+            self._market_data = dict(
+                [(k, {}) for k in self.history.axes[0]])
         return self._market_data
 
     def all_symbols(self):
@@ -380,7 +399,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
             cdf = cdf.sort_index(ascending=1)
             if (df.empty or len(cdf) == plen or
                     len(cdf) >= self.history_limit or
-                    not self.context.backtesting()):
+                    (self.context and not self.context.backtesting())):
                 break
 
             plen = len(cdf)
@@ -408,7 +427,7 @@ class QuandlDatacenter(BaseDatacenter):
         if not self._market_data:
             # download list of symbols from quandl
             path = join(self.data_dir, "codes.zip")
-            if self.context.refresh_history or not isfile(path):
+            if self.refresh_history or not isfile(path):
                 url = "https://www.quandl.com/api/v3/databases/%s/codes"
                 resp = requests.get(url % self.table, data={
                     "api_key": self.api_key}, stream=True)

@@ -132,6 +132,8 @@ class SimulatedAccount(AbstractAccount):
         self.initial_balance = initial_balance
 
     def _update_balance(self):
+        if self.free:
+            return (self.free, self.locked, self.total)
         if not self.free:
             self.free = self.initial_balance.copy()
             self.total = self.free.copy()

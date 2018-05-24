@@ -105,7 +105,7 @@ class TradingSession:
 
     @commission.setter
     def commission(self, value):
-        if len(value) == 2:
+        if hasattr(value, '__len__') and len(value) == 2:
             self._commission, self._commission_asset = value
         else:
             self._commission = value
@@ -387,8 +387,12 @@ class TradingSession:
                 return
             self._run_hook('after_tick_update', event)
             self.portfolio.update_portfolio_value_at_tick(event)
+
+            data = event.item.history.dropna()
+            data = data[data['volume'] > 0]
+            self.strategy.data = data
             self.strategy.tick = event.item
-            self.strategy.data = event.item.history.dropna()
+
             self.strategy.advice_investments_at_tick(event)
             self._run_hook('after_tick_update_done', event)
 

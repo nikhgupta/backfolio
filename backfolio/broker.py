@@ -199,14 +199,12 @@ class SimulatedBroker(AbstractBroker):
         self.events.put(event)
         return order
 
-    def cancel_pending_orders(self, filter_fn=None):
-        for order in self.portfolio.orders:
-            if filter_fn and not filter_fn(order):
-                continue
-            if order['status'] == 'open':
-                order = Order.__construct_from_data(order, self.portfolio)
-                order.mark_cancelled()
-                self.events.put(OrderUnfilledEvent(order))
+    def cancel_pending_orders(self):
+        orders = [o for o in self.portfolio.orders if o['status'] == 'open']
+        for order in orders:
+            order = Order.__construct_from_data(order, self.portfolio)
+            order.mark_cancelled()
+            self.events.put(OrderUnfilledEvent(order))
 
     # TODO: instead allow passing a % which will be added to opening price
     # for limit orders

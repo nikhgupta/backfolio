@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
+from os.path import join
 
 from .core.object import OrderRequest
 from .core.event import OrderRequestedEvent
-from .core.utils import as_df
+from .core.utils import as_df, make_path
 
 
 class BasePortfolio(object):
@@ -215,3 +216,9 @@ class BasePortfolio(object):
         self.daily['cum_returns'] = (1+self.daily['returns']).cumprod()
 
         self._converted_to_pandas = True
+
+    def save_as_benchmark(self, cache_name):
+        data_dir = join(self.context.root_dir, "benchmarks")
+        cache = join(data_dir, "%s.csv" % cache_name)
+        make_path(data_dir)
+        self.timeline.to_csv(cache, index=True)

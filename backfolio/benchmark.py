@@ -155,7 +155,10 @@ class StrategyAsBenchmark(BaseBenchmark):
 
 
 class CSVAsBenchmark(BaseBenchmark):
-    pass
+    def __init__(self, file_name, name=None):
+        if not name:
+            name = file_name
+        super().__init__(name, file_name)
 
 
 class CryptoMarketCapAsBenchmark(BaseBenchmark):
