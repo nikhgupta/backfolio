@@ -1,4 +1,11 @@
 from .utils import detect, generate_id
+from .event import (
+    OrderFilledEvent,
+    OrderRejectedEvent,
+    OrderUnfilledEvent,
+    OrderCreatedEvent,
+    OrderPendingEvent
+)
 
 
 class Tick:
@@ -283,16 +290,49 @@ class Order:
     def is_partially_filled(self):
         return self.remaining and self.remaining != self.quantity
 
-    def mark_closed(self):
+    def mark_filled(self, context):
+        if self.status != 'open':
+            raise ValueError("Cannot mark order as closed: %s" % self)
         self.remaining = 0
         self.status = 'closed'
+        self.updated_at = context.current_time
+        context.events.put(OrderFilledEvent(self))
+        return self
 
-    def mark_rejected(self):
+    def mark_rejected(self, context, message):
+        if self.status != 'open':
+            raise ValueError("Cannot mark order as rejected: %s" % self)
         self.status = 'rejected'
+        self.updated_at = context.current_time
+        context.events.put(OrderRejectedEvent(self, message))
+        return self
 
-    def mark_unfilled(self):
+    def mark_unfilled(self, context):
+        if self.status != 'open':
+            raise ValueError("Cannot mark order as unfilled: %s" % self)
         self.status = 'cancelled'
         self.cost = 0
+        self.updated_at = context.current_time
+        context.events.put(OrderUnfilledEvent(self))
+        return self
+
+    def mark_created(self, context):
+        if self.status != 'open':
+            raise ValueError("Cannot mark order as created: %s" % self)
+        self.updated_at = context.current_time
+        context.events.put(OrderCreatedEvent(self))
+
+    def mark_pending(self, context):
+        if self.status != 'open':
+            raise ValueError("Cannot mark order as pending: %s" % self)
+        self.updated_at = context.current_time
+        context.events.put(OrderPendingEvent(self))
+
+    def mark_cancelled(self, *args, **kwargs):
+        return self.mark_unfilled(*args, **kwargs)
+
+    def mark_closed(self, *args, **kwargs):
+        return self.mark_filled(*args, **kwargs)
 
     @property
     def data(self):

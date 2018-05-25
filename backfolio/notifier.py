@@ -11,6 +11,10 @@ class AbstractNotifier:
     def reset(self, context=None):
         self.context = context
 
+    @property
+    def current_time(self):
+        return self.context.current_time
+
     def notify(self, _message, _now=None):
         raise NotImplementedError("Notifier must implement `notify()`")
 

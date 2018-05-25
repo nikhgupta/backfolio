@@ -4,7 +4,7 @@ from os.path import join
 
 from .core.object import OrderRequest
 from .core.event import OrderRequestedEvent
-from .core.utils import as_df, make_path
+from .core.utils import as_df, items_as_df, make_path
 
 
 class BasePortfolio(object):
@@ -71,6 +71,10 @@ class BasePortfolio(object):
         return self.context.events
 
     @property
+    def current_time(self):
+        return self.context.current_time
+
+    @property
     def cash(self):
         """
         The amount of cash (base currency) we held at any moment.
@@ -114,7 +118,7 @@ class BasePortfolio(object):
         for asset, quantity in self.account.total.items():
             symbol = self.datacenter.assets_to_symbol(asset)
             if asset == self.context.base_currency:
-                equity[asset] = self.account.cash
+                equity[asset] = quantity
             elif symbol in data.index:
                 equity[asset] = quantity * data.open[symbol]
             else:
@@ -127,7 +131,7 @@ class BasePortfolio(object):
                               "cash": self.account.cash})
 
     def record_advice_from_strategy(self, advice_event):
-        self.advice_history.append(advice_event.data)
+        self.advice_history.append(advice_event.item)
 
     def place_order_after_advice(self, advice_event):
         position = 0
@@ -140,20 +144,22 @@ class BasePortfolio(object):
         return request
 
     def record_order_placement_request(self, request_event):
-        self.order_requests.append(request_event.data)
+        self.order_requests.append(request_event.item)
 
     def record_created_order(self, order_event, created_order=None):
         item = created_order if created_order is None else order_event
-        self.orders.append(item.data)
+        self.orders.append(item.item)
 
     def record_filled_order(self, order_filled_event):
-        self.filled_orders.append(order_filled_event.data)
+        # ensure that the status of order is marked as closed in portfolio
+        order = order_filled_event.item
+        self.filled_orders.append(order)
 
     def record_rejected_order(self, rejected_order_event):
-        self.rejected_orders.append(rejected_order_event.data)
+        self.rejected_orders.append(rejected_order_event.item)
 
     def record_unfilled_order(self, unfilled_order_event):
-        self.unfilled_orders.append(unfilled_order_event.data)
+        self.unfilled_orders.append(unfilled_order_event.item)
 
     def update_commission_paid(self, event):
         if not len(self.timeline):
@@ -174,24 +180,24 @@ class BasePortfolio(object):
         if self._converted_to_pandas:
             return self.orders[self.orders.status == 'closed']
         else:
-            return [o for o in self.orders if o['status'] == 'closed']
+            return [o for o in self.orders if o.is_closed]
 
     @property
     def open_orders(self):
         if self._converted_to_pandas:
             return self.orders[self.orders.status == 'open']
         else:
-            return [o for o in self.orders if o['status'] == 'open']
+            return [o for o in self.orders if o.is_open]
 
     def trading_session_complete(self):
         # record advices
-        self.advice_history = as_df(self.advice_history, 'id')
+        self.advice_history = items_as_df(self.advice_history, 'id')
         # record orders
-        self.order_requests = as_df(self.order_requests, 'id')
-        self.orders = as_df(self.orders, 'local_id')
-        self.filled_orders = as_df(self.filled_orders, 'local_id')
-        self.rejected_orders = as_df(self.rejected_orders, 'local_id')
-        self.unfilled_orders = as_df(self.unfilled_orders, 'local_id')
+        self.order_requests = items_as_df(self.order_requests, 'id')
+        self.orders = items_as_df(self.orders, 'local_id')
+        self.filled_orders = items_as_df(self.filled_orders, 'local_id')
+        self.rejected_orders = items_as_df(self.rejected_orders, 'local_id')
+        self.unfilled_orders = items_as_df(self.unfilled_orders, 'local_id')
         # record asset quantity/position and equity over time
         self.positions = as_df(self.positions, 'time', dupes='index')
         self.asset_equity = as_df(self.asset_equity, 'time', dupes='index')

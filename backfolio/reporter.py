@@ -66,6 +66,10 @@ class AbstractReporter(object):
     def events(self):
         return self.context.events
 
+    @property
+    def current_time(self):
+        return self.context.current_time
+
 
 class BaseReporter(AbstractReporter):
     def __init__(self, annualization=365, daily=True,

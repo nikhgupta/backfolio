@@ -4,12 +4,6 @@ from datetime import datetime
 from abc import ABCMeta, abstractmethod
 from .core.utils import fast_xs
 from .core.object import Order
-from .core.event import (
-    OrderFilledEvent,
-    OrderRejectedEvent,
-    OrderUnfilledEvent,
-    OrderCreatedEvent
-)
 from ccxt.base.errors import InsufficientFunds, OrderNotFound
 
 
@@ -70,6 +64,10 @@ class AbstractBroker(object):
     @property
     def events(self):
         return self.context.events
+
+    @property
+    def current_time(self):
+        return self.context.current_time
 
     @property
     def min_order_size(self):
@@ -133,13 +131,15 @@ class SimulatedBroker(AbstractBroker):
     A LIMIT order is executed if the range of next tick covers LIMIT price.
     """
 
+    def check_order_statuses(self):
+        [o.mark_pending(self) for o in self.portfolio.orders if o.is_open]
+
     def create_order_after_placement(self, order_requested_event,
                                      exchange=None):
         request = order_requested_event.item
-        self._future_tick_data = self.datacenter._current_real
         symbol = self.datacenter.assets_to_symbol(request.asset, request.base)
 
-        if symbol not in self._future_tick_data.index:
+        if symbol not in self.datacenter._current_real.index:
             return
 
         if not exchange:
@@ -151,60 +151,51 @@ class SimulatedBroker(AbstractBroker):
 
         order = Order(request, exchange, quantity, cost,
                       price, comm, comm_asset)
-        self.events.put(OrderCreatedEvent(order))
+        order.mark_created(self)
         return order
 
     def execute_order_after_creation(self, order_created_event, exchange=None):
         order = order_created_event.item
+        pending = order_created_event.pending
         cash, cost = self.account.cash, order.order_cost
         quantity, price = order.quantity, order.fill_price
         comm = order.commission
         comm_asset_balance = self.account.free[order.commission_asset]
         symbol = self.datacenter.assets_to_symbol(order.asset, order.base)
-        symbol_data = fast_xs(self._future_tick_data, symbol)
+        symbol_data = fast_xs(self.datacenter._current_real, symbol)
 
         if cash < 1e-8:
-            order.mark_rejected()
-            event = OrderRejectedEvent(order, 'Cash depleted.')
+            order.mark_rejected(self, 'Cash depleted')
             self.datacenter._continue_backtest = False
+        elif cost >= cash and not pending:
+            order.mark_rejected(
+                self,
+                'Insufficient Cash: %0.8f (cost) vs %0.8f (cash)' % (
+                    cost, cash))
+        elif comm > comm_asset_balance and not pending:
+            order.mark_rejected(
+                self,
+                'Insufficient Brokerage: %0.8f (comm) vs %0.8f (asset bal)' % (
+                    comm, comm_asset_balance))
         elif abs(cost) < self.min_order_size:
             # NOTE: we are in a backtest session, and this may produce lot
             # of rejected orders, so we will just ignore this case.
             return
-            # event = OrderRejectedEvent(order, 'Cost < Min Order Size')
-        elif cost >= cash:
-            order.mark_rejected()
-            event = OrderRejectedEvent(order, 'Insufficient Cash: %0.8f \
-                                       (cost) vs %0.8f (cash)' % (cost, cash))
-        elif order.order_type == 'LIMIT' and (
-                quantity > 0 and price <= symbol_data['low']):
-            order.mark_unfilled()
-            event = OrderUnfilledEvent(order, 'Limit order unfilled: %0.8f \
-                                       (price) vs %0.8f (low)' % (
-                                           price, symbol_data['low']))
-        elif order.order_type == 'LIMIT' and (
-                quantity < 0 and price >= symbol_data['high']):
-            order.mark_unfilled()
-            event = OrderUnfilledEvent(order, 'Limit order unfilled: %0.8f \
-                                       (price) vs %0.8f (high)' % (
-                                           price, symbol_data['high']))
-        elif comm > comm_asset_balance:
-            order.mark_rejected()
-            event = OrderRejectedEvent(order, 'Insufficient Brokerage: %0.8f \
-                                       (comm) vs %0.8f (asset bal)' % (
-                                           comm, comm_asset_balance))
-        else:
-            order.mark_closed()
-            event = OrderFilledEvent(order)
-        self.events.put(event)
+            # order.mark_rejected(self, 'Cost < Min Order Size')
+        elif order.is_open and order.order_type == 'LIMIT' and (
+                quantity > 0 and price > symbol_data['low']):
+            order.mark_closed(self)
+        elif order.is_open and order.order_type == 'LIMIT' and (
+                quantity < 0 and price < symbol_data['high']):
+            order.mark_closed(self)
+        elif order.is_open and order.order_type == 'MARKET':
+            order.mark_closed(self)
         return order
 
     def cancel_pending_orders(self):
-        orders = [o for o in self.portfolio.orders if o['status'] == 'open']
+        orders = [o for o in self.portfolio.orders if o.is_open]
         for order in orders:
-            order = Order.__construct_from_data(order, self.portfolio)
-            order.mark_cancelled()
-            self.events.put(OrderUnfilledEvent(order))
+            order.mark_cancelled(self)
 
     # TODO: instead allow passing a % which will be added to opening price
     # for limit orders
@@ -212,9 +203,9 @@ class SimulatedBroker(AbstractBroker):
         symbol = self.datacenter.assets_to_symbol(request.asset, request.base)
         price = request.limit_price
         if price is None:
-            if symbol not in self._future_tick_data.index:
+            if symbol not in self.datacenter._current_real.index:
                 return
-            price = fast_xs(self._future_tick_data, symbol)['open']
+            price = fast_xs(self.datacenter._current_real, symbol)['open']
         return price
 
     def get_slippage(self, request, direction):
@@ -225,7 +216,7 @@ class SimulatedBroker(AbstractBroker):
         return slippage
 
     def get_commission_asset_rate(self, comm_symbol):
-        return fast_xs(self._future_tick_data, comm_symbol)['close']
+        return fast_xs(self.datacenter._current_real, comm_symbol)['close']
 
     def calculate_order_shares_and_cost(self, request):
         price = self.get_order_price(request)
@@ -347,7 +338,6 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         """
         orders = self.portfolio.orders
         for idx, order in enumerate(orders):
-            order = Order._construct_from_data(order, self.portfolio)
             if not order.id or isnan(order.id) or not order.is_open:
                 continue
             try:
@@ -364,9 +354,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
                 self.context.notify_error(e)
 
     def reject_order(self, order, reason):
-        order.mark_rejected()
-        event = OrderRejectedEvent(order, '[BROKER]: %s' % reason)
-        self.events.put(event)
+        order.mark_rejected(self, '[BROKER]: %s' % reason)
         return order
 
     def create_order_after_placement(self, order_requested_event,
@@ -378,7 +366,8 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         quantity, cost, price = self.calculate_order_shares_and_cost(request)
         order = Order(request, exchange, quantity, cost, price,
                       0, self.context.commission_asset)
-        self.context.events.put(OrderCreatedEvent(order))
+        order.mark_created(self)
+        return order
 
     def __place_order_on_exchange(self, order, symbol, quantity, price):
         resp = None
@@ -398,17 +387,21 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         except InsufficientFunds:
             message = "Insufficient funds for Order: %s, Q:%.8f, P:%.8f" % (
                 order, quantity, price)
-            self.events.put(OrderRejectedEvent(order, message))
+            order.mark_rejected(self, message)
             self.notify(message, formatted=True)
         except Exception as e:
-            self.notify("Failed Order: %s, Q:%0.8f, P:%0.8f" % (
-                order, quantity, price), formatted=True)
+            message = "Failed Order: %s, Q:%0.8f, P:%0.8f" % (
+                order, quantity, price)
+            order.mark_rejected(self, message)
+            self.notify(message, formatted=True)
             self.notify_error(e)
         finally:
             return resp
 
     def execute_order_after_creation(self, order_created_event, exchange=None):
         order = order_created_event.item
+        if order.id:
+            return
         price = order.fill_price
         quantity = order.quantity
         cost = order.order_cost
@@ -446,13 +439,10 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         return order
 
     def check_order_statuses(self):
-        orders = self.portfolio.orders
+        orders = [o for o in self.portfolio.orders
+                  if o.id and not isnan(o.id) and o.is_open]
 
         for idx, order in enumerate(orders):
-            order = Order._construct_from_data(order, self.portfolio)
-            if not order.id or isnan(order.id) or not order.is_open:
-                continue
-
             resp = {}
             symbol = self.datacenter.assets_to_symbol(order.asset, order.base)
 
@@ -468,13 +458,15 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             self.portfolio.orders[idx] = order.data
 
             if order.is_closed:
-                self.context.events.put(OrderFilledEvent(order))
+                order.mark_closed(self)
             elif order.is_cancelled:
                 data = order.data.copy()
                 data['quantity'] = data['quantity'] - data['remaining']
                 if data['quantity']:
-                    self.context.events.put(OrderFilledEvent(Order(**data)))
+                    Order(**data).mark_closed(self)
 
                 data = order.data.copy()
                 data['quantity'] = data['remaining']
-                self.context.events.put(OrderUnfilledEvent(Order(**data)))
+                Order(**data).mark_cancelled(self)
+            else:
+                order.mark_pending(self)

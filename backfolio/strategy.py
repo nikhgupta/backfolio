@@ -64,6 +64,10 @@ class BaseStrategy(object):
     def events(self):
         return self.context.events
 
+    @property
+    def current_time(self):
+        return self.context.current_time
+
     def log(self, *args, **kwargs):
         self.context.log(*args, **kwargs)
 
@@ -374,7 +378,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             self.notify(
                 "  Created %4s %s order with ID %s for %0.8f %s at %.8f %s" % (
                    side, order.order_type, order.id, abs(order.quantity),
-                   order.asset, order.fill_price, order.base), formatted=True)
+                   order.asset, order.fill_price, order.base),
+                formatted=True, now=event.item.time)
 
     def after_order_rejected(self, event):
         order = event.item
@@ -382,7 +387,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         self.notify(
             " Rejected %4s %s order for %0.8f %s at %.8f %s (Reason: %s)" % (
               side, order.order_type, abs(order.quantity), order.asset,
-              order.fill_price, order.base, event.reason), formatted=True)
+              order.fill_price, order.base, event.reason),
+            formatted=True, now=event.item.time)
 
     def in_rejected(self, symbol, selected, rejected):
         return symbol in rejected.index and symbol not in selected.index
@@ -425,7 +431,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                     asset_equity > rebalanced/100):
                 if asset == self.context.commission_asset:
                     price = fast_xs(data, symbol)['close']
-                    self.order_percent(symbol, 3, price)
+                    self.order_percent(symbol, 3)
                 else:
                     price = self.selling_price(symbol, data)
                     self.order_percent(symbol, 0, price)

@@ -13,7 +13,8 @@ from .core.event import (
     OrderFilledEvent,
     OrderUnfilledEvent,
     OrderRejectedEvent,
-    OrderCreatedEvent
+    OrderCreatedEvent,
+    OrderPendingEvent
 )
 
 
@@ -38,6 +39,7 @@ class TradingSession:
         self._refresh_history = True
         self._start_time = None
         self._end_time = None
+        self._current_time = None
 
     @property
     def mode(self):
@@ -198,6 +200,10 @@ class TradingSession:
     def add_notifier(self, notifier):
         self._notifiers.append(notifier)
 
+    @property
+    def current_time(self):
+        return self._current_time
+
     def log(self, message):
         if self.debug:
             print(message)
@@ -296,6 +302,9 @@ class TradingSession:
     def _before_each_tick(self):
         pass
 
+    def _on_each_tick(self):
+        self.broker.check_order_statuses()
+
     def _should_reloop(self):
         return True
 
@@ -343,6 +352,7 @@ class TradingSession:
             self._before_each_tick()
 
             ts = self._get_next_tick()
+            self._on_each_tick()
             if not ts:
                 break
 
@@ -385,14 +395,15 @@ class TradingSession:
         if type(event) == TickUpdateEvent:
             if event.item.time == self.last_run_timestamp():
                 return
-            self._run_hook('after_tick_update', event)
-            self.portfolio.update_portfolio_value_at_tick(event)
 
             data = event.item.history.dropna()
             data = data[data['volume'] > 0]
+            self._current_time = event.item.time
             self.strategy.data = data
             self.strategy.tick = event.item
 
+            self._run_hook('after_tick_update', event)
+            self.portfolio.update_portfolio_value_at_tick(event)
             self.strategy.advice_investments_at_tick(event)
             self._run_hook('after_tick_update_done', event)
 
@@ -415,6 +426,11 @@ class TradingSession:
                 self.portfolio.record_created_order(event, order)
                 self.account.lock_cash_for_order_if_required(event, order)
             self._run_hook('after_order_created_done', event)
+
+        elif type(event) == OrderPendingEvent:
+            self._run_hook('after_order_pending', event)
+            self.broker.execute_order_after_creation(event)
+            self._run_hook('after_order_pending_done', event)
 
         elif type(event) == OrderFilledEvent:
             self._run_hook('after_order_filled', event)
@@ -455,6 +471,10 @@ class PaperTradingSession(TradingSession):
         self._mode = 'paper'
         self.session = session
         self.poll_frequency = poll_frequency
+
+    @property
+    def current_time(self):
+        return datetime.datetime.now()
 
     @property
     def refresh_history(self):
@@ -532,6 +552,3 @@ class LiveTradingSession(PaperTradingSession):
     def slippage(self, slippage_fn):
         raise ValueError("Slippage is calculated inherently in live trading " +
                          "session. You do not need to set it manually.")
-
-    def _before_each_tick(self):
-        self.broker.check_order_statuses()

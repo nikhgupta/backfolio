@@ -141,6 +141,10 @@ class BaseDatacenter(object):
     def events(self):
         return self.context.events
 
+    @property
+    def current_time(self):
+        return self.context.current_time
+
     def log(self, message):
         if self.context:
             return self.context.log(message)

@@ -35,7 +35,7 @@ class TickUpdateEvent(BaseEvent):
     Event emitted when a new market data is obtained from the datacenter.
     """
     def __init__(self, tick):
-        super().__init__(tick, priority=1)
+        super().__init__(tick, priority=2)
 
 
 class StrategyAdviceEvent(BaseEvent):
@@ -43,7 +43,7 @@ class StrategyAdviceEvent(BaseEvent):
     Event emitted when a new advice is given by a strategy.
     """
     def __init__(self, advice):
-        super().__init__(advice, priority=1)
+        super().__init__(advice, priority=2)
 
 
 class OrderRequestedEvent(BaseEvent):
@@ -51,7 +51,7 @@ class OrderRequestedEvent(BaseEvent):
     Event emitted when a new order is placed by portfolio for an asset.
     """
     def __init__(self, order_request):
-        super().__init__(order_request, priority=1)
+        super().__init__(order_request, priority=2)
 
 
 class OrderCreatedEvent(BaseEvent):
@@ -60,10 +60,17 @@ class OrderCreatedEvent(BaseEvent):
     """
     def __init__(self, order):
         super().__init__(order, priority=4)
+        self.pending = False
 
 
 class OrderFilledEvent(OrderCreatedEvent):
     pass
+
+
+class OrderPendingEvent(BaseEvent):
+    def __init__(self, order):
+        super().__init__(order, priority=1)
+        self.pending = True
 
 
 class OrderRejectedEvent(OrderCreatedEvent):

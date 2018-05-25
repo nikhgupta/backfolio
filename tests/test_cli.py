@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for `backfolio` package."""
+"""Tests for `backfolio.cli` package."""
 
 import pytest
 
 from click.testing import CliRunner
 
-from backfolio import backfolio
 from backfolio import cli
 
 

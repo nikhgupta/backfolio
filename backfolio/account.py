@@ -92,6 +92,10 @@ class AbstractAccount(object):
     def events(self):
         return self.context.events
 
+    @property
+    def current_time(self):
+        return self.context.current_time
+
     def get_balance(self, symbol=None, refresh=False):
         """
         Get account balance for a single asset or for all.

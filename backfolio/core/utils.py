@@ -63,6 +63,11 @@ def as_df(items, index=None, dupes='all'):
     return df
 
 
+def items_as_df(items, index=None, dupes='all'):
+    items = [item.data for item in items]
+    return as_df(items, index, dupes)
+
+
 def drop_duplicates(df, index=False):
     if index:
         return df[~df.index.duplicated(keep='last')]
