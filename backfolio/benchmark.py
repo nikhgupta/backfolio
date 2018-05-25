@@ -80,23 +80,27 @@ class BaseBenchmark(object):
 
     @property
     def timeline(self):
-        return self._fetch_data(group_daily=False)
+        data = self._fetch_data()
+        return self._sanitize_benchmark_data(data, group_daily=False)
 
     @property
     def daily(self):
-        return self._fetch_data(group_daily=True)
+        data = self._fetch_data()
+        return self._sanitize_benchmark_data(data, group_daily=True)
 
-    def _sanitize_benchmark_data(self, data, group_daily=True):
+    def _sanitize_benchmark_data(self, data, group_daily=False):
         data.index = pd.to_datetime(data.index)
         data.index.name = 'time'
         if group_daily:
             data = data.groupby(pd.Grouper(freq='D')).first()
 
-        if 'returns' not in data:
+        if 'open' in data:
             data['returns'] = data['open']/data['open'].shift(1) - 1
+        if 'equity' in data:
+            data['returns'] = data['equity']/data['equity'].shift(1) - 1
+
         data['returns'] = data['returns'].fillna(0)
-        if 'cum_returns' not in data:
-            data['cum_returns'] = (1+data['returns']).cumprod()
+        data['cum_returns'] = (1+data['returns']).cumprod()
         if self.context.start_time:
             data = data[self.context.start_time:]
         if self.context.end_time:
@@ -104,7 +108,7 @@ class BaseBenchmark(object):
         data['cum_returns'] = data['cum_returns']/data['cum_returns'].iloc[0]
         return data
 
-    def _fetch_data(self, group_daily=False):
+    def _fetch_data(self):
         if self._result is None:
             if (self._cache and isfile(self._cache) and
                     not self.context.refresh_history):
@@ -112,7 +116,7 @@ class BaseBenchmark(object):
             else:
                 data = self._returns_data()
                 data.to_csv(self._cache, index=True)
-            self._result = self._sanitize_benchmark_data(data, group_daily)
+            self._result = data
         return self._result
 
     @abstractmethod
