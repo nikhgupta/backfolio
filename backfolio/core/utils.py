@@ -1,8 +1,15 @@
+import math
 import string
 import pathlib
 import pandas as pd
+import empyrical as ep
 from random import choice
+import matplotlib.pyplot as plt
 from os.path import join, isfile
+
+
+def df_apply(src, ind, *args):
+    return src.apply(lambda x: ind(x.values, *args))
 
 
 def fast_xs_values(df, key):
@@ -25,7 +32,8 @@ def fast_xs(df, key):
     """
     keys = df.columns
     vals = fast_xs_values(df, key)
-    return dict([keys[idx], val] for idx, val in enumerate(vals))
+    return dict(zip(keys, vals))
+    # return dict([keys[idx], val] for idx, val in enumerate(vals))
 
 
 def make_path(path):

@@ -24,10 +24,11 @@ class Tick:
 class Advice:
     _ids = []
 
-    def __init__(self, strategy, symbol, exchange, last_price,
+    def __init__(self, strategy, asset, base, exchange, last_price,
                  quantity, quantity_type, order_type, limit_price=None,
-                 max_cost=0, time=None, id=0):
-        self.symbol = symbol
+                 max_cost=0, side=None, position=None, time=None, id=0):
+        self.asset = asset
+        self.base = base
         self.strategy = strategy
         self.exchange = exchange
         self.last_price = last_price
@@ -38,6 +39,9 @@ class Advice:
         self.id = id if id else generate_id('advice', self)
         self.time = time
         self.max_cost = max_cost
+        self.side = side
+        self.position = position
+        self._symbol = None
 
     @classmethod
     def _construct_from_data(cls, data, _portfolio):
@@ -45,9 +49,7 @@ class Advice:
                      data['exchange'], data['last_price'], data['quantity'],
                      data['quantity_type'], data['order_type'],
                      data['limit_price'], data['time'], data['id'])
-        if 'max_cost' in data:
-            advice.max_cost = data['max_cost']
-        for field in ['time']:
+        for field in ['time', 'max_cost', 'side', 'position']:
             if field in data and data[field]:
                 setattr(advice, field, data[field])
         return advice
@@ -62,91 +64,39 @@ class Advice:
         self.__class__._ids.append(val)
 
     @property
+    def max_order_size(self):
+        return self.max_cost
+
+    @property
+    def is_buy(self):
+        return self.side == "BUY"
+
+    @property
+    def is_sell(self):
+        return self.side == "SELL"
+
+    @property
+    def is_limit(self):
+        return self.order_type == 'LIMIT'
+
+    @property
+    def is_market(self):
+        return self.order_type == 'MARKET'
+
+    def symbol(self, context):
+        if not self._symbol:
+            self._symbol = context.datacenter.assets_to_symbol(
+                self.asset, self.base)
+        return self._symbol
+
+    @property
     def data(self):
-        return {"id": self.id, "time": self.time, "symbol": self.symbol,
+        return {"id": self.id, "time": self.time, "position": self.position,
                 "exchange": self.exchange, "strategy": self.strategy,
                 "last_price": self.last_price, "quantity": self.quantity,
                 "quantity_type": self.quantity_type, "max_cost": self.max_cost,
-                "order_type": self.order_type, "limit_price": self.limit_price}
-
-    def __repr__(self):
-        return "%s(%s)" % (self.__class__.__name__, self.data)
-
-
-class OrderRequest:
-    _ids = []
-
-    """
-    Quantity of an asset should be in number of shares, and can be positive or
-    negative depending on whether we want to LONG or SHORT a position.
-
-    To exit a position, order quantity can be specified as 0.
-    """
-    def __init__(self, advice, asset, base, position=0, id=0):
-        self.advice = advice
-        self.base = base
-        self.asset = asset
-        self.position = position
-        self.id = id if id else generate_id('request', self)
-
-    @classmethod
-    def _construct_from_data(cls, data, portfolio):
-        advice = detect(portfolio.advice_history,
-                        lambda adv: adv['id'] == data['advice_id'])
-        advice = Advice._construct_from_data(advice, portfolio)
-        request = cls(advice, data['asset'], data['base'], data['position'],
-                      data['id'])
-        return request
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, val):
-        self._id = val
-        self.__class__._ids.append(val)
-
-    @property
-    def advice_id(self):
-        return self.advice.id
-
-    @property
-    def time(self):
-        return self.advice.time
-
-    @property
-    def exchange(self):
-        return self.advice.exchange
-
-    @property
-    def quantity(self):
-        return self.advice.quantity
-
-    @property
-    def quantity_type(self):
-        return self.advice.quantity_type
-
-    @property
-    def order_type(self):
-        return self.advice.order_type
-
-    @property
-    def limit_price(self):
-        return self.advice.limit_price
-
-    @property
-    def max_order_size(self):
-        return self.advice.max_cost
-
-    @property
-    def data(self):
-        return {"id": self.id, "time": self.time, "advice_id": self.advice_id,
-                "asset": self.asset, "base": self.base,
-                "quantity": self.quantity, "quantity_type": self.quantity_type,
-                "order_type": self.order_type, "position": self.position,
-                "limit_price": self.limit_price,
-                "max_order_size": self.max_order_size}
+                "order_type": self.order_type, "limit_price": self.limit_price,
+                "side": self.side, "asset": self.asset, "base": self.base}
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.data)
@@ -155,13 +105,13 @@ class OrderRequest:
 class Order:
     _ids = []
 
-    def __init__(self, order_request, exchange, quantity, order_cost,
+    def __init__(self, advice, exchange, quantity, order_cost,
                  fill_price, commission=0, commission_asset=None, local_id=0):
         self._id = 0
         self._local_id = local_id if local_id else generate_id('order', self)
-        self.order_request = order_request
+        self.advice = advice
         if exchange:
-            self.order_request.advice.exchange = exchange
+            self.advice.exchange = exchange
         self._status = 'open'
         self.quantity = quantity
         self.remaining = quantity
@@ -174,10 +124,10 @@ class Order:
 
     @classmethod
     def _construct_from_data(cls, data, portfolio):
-        request = detect(portfolio.order_requests,
-                         lambda req: req['id'] == data['order_request_id'])
-        request = OrderRequest._construct_from_data(request, portfolio)
-        order = cls(request, data['exchange'], data['quantity'],
+        advice = detect(portfolio.advice_history,
+                        lambda req: req['id'] == data['advice_id'])
+        advice = Advice._construct_from_data(advice, portfolio)
+        order = cls(advice, data['exchange'], data['quantity'],
                     data['order_cost'], data['fill_price'], data['commission'],
                     data['commission_asset'], data['local_id'])
         for field in ['id', 'time', 'status', 'updated_at', 'remaining']:
@@ -212,31 +162,45 @@ class Order:
 
     @property
     def time(self):
-        return self._time if self._time else self.order_request.time
+        return self._time if self._time else self.advice.time
 
     @time.setter
     def time(self, value):
         self._time = value
 
     @property
-    def exchange(self):
-        return self.order_request.exchange
+    def side(self):
+        if self.advice.side:
+            return self.advice.side
+        else:
+            return 'buy' if self.quantity > 0 else 'sell'
+
+    @side.setter
+    def side(self, val):
+        self.advice.side = val
+
+    def symbol(self, context):
+        return self.advice.symbol(context)
 
     @property
-    def order_request_id(self):
-        return self.order_request.id
+    def exchange(self):
+        return self.advice.exchange
+
+    @property
+    def advice_id(self):
+        return self.advice.id
 
     @property
     def asset(self):
-        return self.order_request.asset
+        return self.advice.asset
 
     @property
     def base(self):
-        return self.order_request.base
+        return self.advice.base
 
     @property
     def order_type(self):
-        return self.order_request.order_type
+        return self.advice.order_type
 
     @property
     def commission_asset(self):
@@ -261,10 +225,6 @@ class Order:
     @property
     def is_market(self):
         return self.order_type == 'MARKET'
-
-    @property
-    def side(self):
-        return 'buy' if self.quantity > 0 else 'sell'
 
     @property
     def is_buy(self):
@@ -299,12 +259,13 @@ class Order:
         context.events.put(OrderFilledEvent(self))
         return self
 
-    def mark_rejected(self, context, message):
+    def mark_rejected(self, context, message=None, track=True):
         if self.status != 'open':
             raise ValueError("Cannot mark order as rejected: %s" % self)
         self.status = 'rejected'
         self.updated_at = context.current_time
-        context.events.put(OrderRejectedEvent(self, message))
+        if track:
+            context.events.put(OrderRejectedEvent(self, message))
         return self
 
     def mark_unfilled(self, context):
@@ -338,8 +299,8 @@ class Order:
     def data(self):
         return {"id": self.id, "local_id": self.local_id, "time": self.time,
                 "asset": self.asset, "base": self.base,
-                "order_request_id": self.order_request_id,
-                "exchange": self.exchange,
+                "advice_id": self.advice_id,
+                "exchange": self.exchange, "side": self.side,
                 "quantity": self.quantity, "remaining": self.remaining,
                 "order_cost": self.order_cost, "fill_price": self.fill_price,
                 "order_type": self.order_type, "status": self.status,

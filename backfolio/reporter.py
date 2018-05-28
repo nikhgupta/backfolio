@@ -1,7 +1,7 @@
+import numpy as np
 import pandas as pd
 import empyrical as ep
 import matplotlib.pyplot as plt
-from .core.utils import fast_xs
 
 
 class AbstractReporter(object):
@@ -12,6 +12,7 @@ class AbstractReporter(object):
 
     def reset(self, context=None):
         self.context = context
+        return self
 
     def generate_tick_report(self):
         """ Routine to run after trading for each tick is complete. At this
@@ -73,12 +74,13 @@ class AbstractReporter(object):
 
 class BaseReporter(AbstractReporter):
     def __init__(self, annualization=365, daily=True,
-                 log_axis=True, plot=True):
+                 log_axis=True, plot=True, doprint=True):
         super().__init__(name='base-reporter')
         self.annualization = annualization
         self.log_axis = log_axis
         self.daily = daily
         self.plot = plot
+        self.doprint = doprint
 
     def generate_summary_report(self):
         if len(self.portfolio.timeline) < 2:
@@ -89,6 +91,7 @@ class BaseReporter(AbstractReporter):
         df.loc['invested'] = 1
         for bm in benchmarks:
             name, series = (bm.name, bm.daily)
+            pofret = self.portfolio.daily.returns
 
             # regarding returns obtained from the strategy
             df.loc['final_return', name] = series.cum_returns.iloc[-1]
@@ -96,6 +99,9 @@ class BaseReporter(AbstractReporter):
                                             ** (1/len(series))) - 1
             df.loc['annual_return', name] = ep.annual_return(
                 series.returns, period='daily', annualization=ticks)
+            df.loc['performance', name] = (
+                series.cum_returns.iloc[-1]
+                / benchmarks[-1].daily.cum_returns.iloc[-1])
 
             if self.account._extra_capital:
                 if name == 'portfolio':
@@ -132,6 +138,10 @@ class BaseReporter(AbstractReporter):
                 self.portfolio.daily.returns, series.returns,
                 period='daily', annualization=ticks)
 
+            df.loc['correlation', name] = series.returns.corr(pofret)
+            df.loc['covariance', name] = (pofret.cov(series.returns)
+                                          / pofret.cov(pofret))
+
         if self.plot:
             fig, ax = plt.subplots()
             ax.set_title('Performance Report')
@@ -139,19 +149,21 @@ class BaseReporter(AbstractReporter):
                 ax.set_yscale('log')
 
         for bm in benchmarks:
-            name, series = (bm.name, bm.daily)
-            returns = fast_xs(df, 'final_return')
-            df.loc['performance', name] = (
-                returns[self.portfolio.name]/returns[name])
             if self.plot:
                 curve = bm.daily if self.daily else bm.timeline
-                ax.plot(curve.cum_returns, label=bm.name)
+                if bm.name == 'portfolio':
+                    ax.plot(curve.cum_returns, label=bm.name,
+                            color='black', linewidth=3)
+                else:
+                    ax.plot(curve.cum_returns, label=bm.name)
 
         if self.plot:
             fig.legend()
             plt.show()
 
         self._data = df
+        if self.doprint:
+            print(df)
         return df
 
 
@@ -179,14 +191,14 @@ class CashAndEquityReporter(AbstractReporter):
             message %= (data['commission_paid'], comm)
         self.context.notify(message, formatted=True, now=data['time'])
 
-    def _plot_with_averages(self, axis, name, data):
+    def _plot_with_averages(self, axis, name, data, **kwargs):
         axis.plot(data, label=name)
         rolling = data.rolling(self.period)
         if self.bounds:
             axis.plot(rolling.min(), label="Min %s" % name)
             axis.plot(rolling.max(), label="Max %s" % name)
         if self.mean:
-            axis.plot(rolling.mean(), label="Avg %s" % name)
+            axis.plot(rolling.mean(), label="Avg %s" % name, **kwargs)
 
     def generate_summary_report(self):
         cash = self.portfolio.timeline.cash
@@ -197,8 +209,8 @@ class CashAndEquityReporter(AbstractReporter):
         ax.set_title('Cash vs Equity')
         if self.log_axis:
             ax.set_yscale('log')
-        self._plot_with_averages(ax, 'Cash', cash)
-        self._plot_with_averages(ax, 'Equity', equity)
+        self._plot_with_averages(ax, 'Cash', cash, color='black')
+        self._plot_with_averages(ax, 'Equity', equity, color='r')
         fig.legend()
         plt.show()
 
@@ -213,12 +225,90 @@ class OrdersReporter(AbstractReporter):
             filled = len(self.portfolio.filled_orders)/total*100
             rejected = len(self.portfolio.rejected_orders)/total*100
             unfilled = len(self.portfolio.unfilled_orders)/total*100
-            ignored = 100 - (filled + rejected + unfilled)
+            open = len(self.portfolio.open_orders)/total*100
+            ignored = 100 - (filled + rejected + unfilled + open)
             each_tick = total / len(self.portfolio.timeline)
 
             print("Order Placement Summary")
             print("=======================")
             print(("Total: %d orders, Per Tick: %.2f orders\n" +
                    "Filled: %.2f%%, Unfilled: %.2f%%, " +
-                   "Rejected: %.2f%%, Ignored: %.2f%%\n") % (
-                      total, each_tick, filled, unfilled, rejected, ignored))
+                   "Rejected: %.2f%%, Open: %.2f%%, Ignored: %.2f%%\n") % (
+                      total, each_tick, filled, unfilled,
+                      rejected, open, ignored))
+
+
+class MonteCarloAnalysis(AbstractReporter):
+    def __init__(self, simulations=2000, histogram=True, log_axis=True,
+                 bins=20):
+        super().__init__(name='monte-carlo')
+        self.simulations = simulations
+        self.histogram = histogram
+        self.log_axis = log_axis
+        self.bins = bins
+
+    @staticmethod
+    def max_dd(returns):
+        """Assumes returns is a pandas Series"""
+        r = returns.add(1).cumprod()
+        dd = r.div(r.cummax()).sub(1)
+        mdd = dd.min()
+        end = dd.argmin()
+        start = r.loc[:end].argmax()
+        return mdd, start, end
+
+    def generate_summary_report(self):
+        result_wr, result_wor = [], []
+        ret = 1 + self.portfolio.timeline.returns
+
+        fig, axs = plt.subplots(3, 2, figsize=(16, 16))
+        for i in range(self.simulations):
+            vals = ret.values
+            np.random.shuffle(vals)
+            price_list_wr = [1]
+            price_list_wor = [1]
+            for wor in vals:
+                wr = vals[np.random.randint(len(vals))]
+                price_list_wr.append(price_list_wr[-1]*wr)
+                price_list_wor.append(price_list_wor[-1]*wor)
+            axs[0][0].plot(price_list_wor, color='gray', alpha=0.1)
+            axs[0][1].plot(price_list_wr, color='gray', alpha=0.1)
+            result_wr.append(price_list_wr)
+            result_wor.append(price_list_wor)
+
+        fig.suptitle('Monte Carlo Equity Curve Analysis %s' % (
+            ' (Logarithmic)' if self.log_axis else ''))
+        axs[0][0].set_title('Equity Without replacement')
+        axs[0][0].plot(ret.cumprod().values, color='r', linewidth=3)
+        axs[0][1].set_title('Equity With replacement')
+        axs[0][1].plot(ret.cumprod().values, color='r', linewidth=3)
+        if self.log_axis:
+            axs[0][0].set_yscale('log')
+            axs[0][1].set_yscale('log')
+
+        ret = [x[-1] for x in result_wr]
+        sharpe = [np.mean(x)/np.std(x) for x in result_wr]
+
+        dds_wr = [self.max_dd(pd.Series(i)-1) for i in result_wr]
+        dds_wor = [self.max_dd(pd.Series(i)-1) for i in result_wor]
+        axs[1][0].hist([-min(x)*100 for x in dds_wor], bins=self.bins)
+        axs[1][0].set_title('Max Drawdown Histogram (without replacement)')
+        axs[1][1].hist([-min(x)*100 for x in dds_wr], bins=self.bins)
+        axs[1][1].set_title('Max Drawdown Histogram (with replacement)')
+
+        axs[2][0].hist(ret, bins=self.bins)
+        axs[2][0].axvline(np.mean(ret), color='r', linewidth=2)
+        axs[2][0].axvline(np.percentile(ret, 5), color='r',
+                          linestyle='dashed', linewidth=2)
+        axs[2][0].axvline(np.percentile(ret, 95), color='r',
+                          linestyle='dashed', linewidth=2)
+        axs[2][0].set_title('Final Equity Histogram (with replacement)')
+        axs[2][1].hist(sharpe, bins=self.bins)
+        axs[2][1].axvline(np.mean(sharpe), color='r', linewidth=2)
+        axs[2][1].axvline(np.percentile(sharpe, 5), color='r',
+                          linestyle='dashed', linewidth=2)
+        axs[2][1].axvline(np.percentile(sharpe, 95), color='r',
+                          linestyle='dashed', linewidth=2)
+        axs[2][1].set_title('Sharpe/tick Histogram (with replacement)')
+
+        plt.show()

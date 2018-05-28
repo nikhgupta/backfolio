@@ -38,6 +38,7 @@ class AbstractAccount(object):
         self.total = {}
         self.last_update_at = None
         self.get_balance(refresh=True)
+        return self
 
     def _adjust_for_extra_capital(self):
         if self._extra_capital is not None:
@@ -55,7 +56,8 @@ class AbstractAccount(object):
 
     @property
     def cash(self):
-        self._update_balance()
+        if (not self.free or not self.context.backtesting()):
+            self._update_balance()
         cash = self.free[self.context.base_currency]
         self._adjust_for_extra_capital()
         return cash - self._extra_capital if self._extra_capital else cash

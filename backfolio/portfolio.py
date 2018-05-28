@@ -2,9 +2,8 @@ import numpy as np
 import pandas as pd
 from os.path import join
 
-from .core.object import OrderRequest
 from .core.event import OrderRequestedEvent
-from .core.utils import as_df, items_as_df, make_path
+from .core.utils import as_df, items_as_df, make_path, fast_xs
 
 
 class BasePortfolio(object):
@@ -32,15 +31,16 @@ class BasePortfolio(object):
         self.asset_equity = []
         self.advice_history = []
         self.orders = []
+        self.open_orders = []
         self.filled_orders = []
-        self.order_requests = []
         self.rejected_orders = []
         self.unfilled_orders = []
         self._converted_to_pandas = False
 
         self.session_fields = ['timeline', 'asset_equity', 'advice_history',
                                'orders', 'filled_orders', 'rejected_orders',
-                               'unfilled_orders', 'order_requests']
+                               'unfilled_orders', 'open_orders']
+        return self
 
     @property
     def account(self):
@@ -120,7 +120,8 @@ class BasePortfolio(object):
             if asset == self.context.base_currency:
                 equity[asset] = quantity
             elif symbol in data.index:
-                equity[asset] = quantity * data.open[symbol]
+                price = fast_xs(data.fillna(0), symbol)['open']
+                equity[asset] = quantity * price
             else:
                 equity[asset] = 0
 
@@ -134,32 +135,33 @@ class BasePortfolio(object):
         self.advice_history.append(advice_event.item)
 
     def place_order_after_advice(self, advice_event):
-        position = 0
         advice = advice_event.item
-        asset, base = self.datacenter.symbol_to_assets(advice.symbol)
-        if asset in self.account.total:
-            position = self.account.total[asset]
-        request = OrderRequest(advice, asset, base, position)
-        self.events.put(OrderRequestedEvent(request))
-        return request
-
-    def record_order_placement_request(self, request_event):
-        self.order_requests.append(request_event.item)
+        self.events.put(OrderRequestedEvent(advice))
+        return advice
 
     def record_created_order(self, order_event, created_order=None):
-        item = created_order if created_order is None else order_event
-        self.orders.append(item.item)
+        item = created_order if created_order else order_event.item
+        self.orders.append(item)
+        self.open_orders.append(item)
 
     def record_filled_order(self, order_filled_event):
         # ensure that the status of order is marked as closed in portfolio
         order = order_filled_event.item
         self.filled_orders.append(order)
+        if order in self.open_orders:
+            self.open_orders.remove(order)
 
     def record_rejected_order(self, rejected_order_event):
-        self.rejected_orders.append(rejected_order_event.item)
+        order = rejected_order_event.item
+        self.rejected_orders.append(order)
+        if order in self.open_orders:
+            self.open_orders.remove(order)
 
     def record_unfilled_order(self, unfilled_order_event):
-        self.unfilled_orders.append(unfilled_order_event.item)
+        order = unfilled_order_event.item
+        self.unfilled_orders.append(order)
+        if order in self.open_orders:
+            self.open_orders.remove(order)
 
     def update_commission_paid(self, event):
         if not len(self.timeline):
@@ -182,19 +184,12 @@ class BasePortfolio(object):
         else:
             return [o for o in self.orders if o.is_closed]
 
-    @property
-    def open_orders(self):
-        if self._converted_to_pandas:
-            return self.orders[self.orders.status == 'open']
-        else:
-            return [o for o in self.orders if o.is_open]
-
     def trading_session_complete(self):
         # record advices
         self.advice_history = items_as_df(self.advice_history, 'id')
         # record orders
-        self.order_requests = items_as_df(self.order_requests, 'id')
         self.orders = items_as_df(self.orders, 'local_id')
+        self.open_orders = items_as_df(self.open_orders, 'local_id')
         self.filled_orders = items_as_df(self.filled_orders, 'local_id')
         self.rejected_orders = items_as_df(self.rejected_orders, 'local_id')
         self.unfilled_orders = items_as_df(self.unfilled_orders, 'local_id')
@@ -216,7 +211,7 @@ class BasePortfolio(object):
 
         # same as above for daily time period
         # this is the equity/commission paid till the start # of current day
-        self.daily = self.timeline.groupby(pd.Grouper(freq='D')).first()
+        self.daily = self.timeline.groupby(pd.Grouper(freq='D')).last()
         self.daily['returns'] = (
             self.daily.equity / self.daily.equity.shift(1) - 1).fillna(0)
         self.daily['cum_returns'] = (1+self.daily['returns']).cumprod()

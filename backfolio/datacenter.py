@@ -21,9 +21,6 @@ from .core.utils import make_path
 from .core.event import TickUpdateEvent
 
 
-# TODO: allow setting/using a specific set of symbols only
-
-
 MAXINT = 2**32 - 1
 
 
@@ -72,6 +69,10 @@ class BaseDatacenter(object):
         self.markets = self._selected_symbols.copy()
         if context:
             self.reload_history(refresh=self.context.refresh_history)
+            if (not self.context.refresh_history and
+                    self.history is None):
+                raise ValueError("You must run with refresh=True")
+        return self
 
     @property
     def refresh_history(self):
@@ -191,7 +192,7 @@ class BaseDatacenter(object):
         self._prev_tick = None
         for ts in history.major_axis:
             self._prev_tick = self._current_real
-            self._current_real = history.loc[:, ts, :].T.dropna()
+            self._current_real = history.loc[:, ts, :].T.dropna(how='all')
             if self._prev_tick is not None:
                 yield((ts, self._prev_tick))
 
@@ -201,7 +202,7 @@ class BaseDatacenter(object):
         N ticks. We, specifically, avoid look-ahead bias here.
         """
         data = self._data_seen[-n:]
-        data = pd.Panel(dict(data))
+        data = pd.Panel(dict((tick.time, tick.history) for tick in data))
         data = data.transpose(1, 0, 2)
         return data
 
@@ -355,9 +356,11 @@ class CryptocurrencyDatacenter(BaseDatacenter):
     def load_markets(self):
         if not self._market_data and self.refresh_history:
             self._market_data = self.exchange.load_markets(True)
-        else:
+        elif self.history is not None:
             self._market_data = dict(
                 [(k, {}) for k in self.history.axes[0]])
+        else:
+            raise ValueError("You must run with refresh=True to load markets")
         return self._market_data
 
     def all_symbols(self):
@@ -371,6 +374,8 @@ class CryptocurrencyDatacenter(BaseDatacenter):
             self.markets = [key for key, _v in self._market_data.items()
                             if key[-len(self.to_sym):] == self.to_sym]
         else:
+            if not self._market_data:
+                self.load_markets()
             self.markets = list(self._market_data.keys())
         return self.markets
 

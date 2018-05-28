@@ -36,6 +36,7 @@ class AbstractBroker(object):
         self.min_order_size = 1e-4
         self.max_order_size = 0
         self.max_position_held = 0
+        return self
 
     @property
     def account(self):
@@ -132,12 +133,13 @@ class SimulatedBroker(AbstractBroker):
     """
 
     def check_order_statuses(self):
-        [o.mark_pending(self) for o in self.portfolio.orders if o.is_open]
+        for order in self.portfolio.open_orders:
+            order.mark_pending(self)
 
     def create_order_after_placement(self, order_requested_event,
                                      exchange=None):
-        request = order_requested_event.item
-        symbol = self.datacenter.assets_to_symbol(request.asset, request.base)
+        advice = order_requested_event.item
+        symbol = advice.symbol(self)
 
         if symbol not in self.datacenter._current_real.index:
             return
@@ -145,26 +147,34 @@ class SimulatedBroker(AbstractBroker):
         if not exchange:
             exchange = self.datacenter.exchange.name
 
-        quantity, cost, price = self.calculate_order_shares_and_cost(request)
+        quantity, cost, price = self.calculate_order_shares_and_cost(advice)
+        if not quantity and not price:  # empty order
+            return
         comm, comm_asset, comm_rate = self.calculate_commission(
-            request, quantity, cost)
+            advice, quantity, cost)
 
-        order = Order(request, exchange, quantity, cost,
+        order = Order(advice, exchange, quantity, cost,
                       price, comm, comm_asset)
         order.mark_created(self)
         return order
 
     def execute_order_after_creation(self, order_created_event, exchange=None):
+        # FIXME: if order is pending recalculate order cost, price, etc.
         order = order_created_event.item
         pending = order_created_event.pending
         cash, cost = self.account.cash, order.order_cost
         quantity, price = order.quantity, order.fill_price
         comm = order.commission
         comm_asset_balance = self.account.free[order.commission_asset]
-        symbol = self.datacenter.assets_to_symbol(order.asset, order.base)
-        symbol_data = fast_xs(self.datacenter._current_real, symbol)
+        symbol = order.symbol(self)
+        symbol_data = None
+        if symbol in self.datacenter._current_real.index:
+            symbol_data = fast_xs(self.datacenter._current_real, symbol)
 
-        if cash < 1e-8:
+        if (not symbol_data and order.is_open and
+                not self.datacenter._current_real.empty):
+            order.mark_rejected(self, 'Symbol obsolete: %s' % symbol)
+        elif cash < 1e-8:
             order.mark_rejected(self, 'Cash depleted')
             self.datacenter._continue_backtest = False
         elif cost >= cash and not pending:
@@ -178,10 +188,14 @@ class SimulatedBroker(AbstractBroker):
                 'Insufficient Brokerage: %0.8f (comm) vs %0.8f (asset bal)' % (
                     comm, comm_asset_balance))
         elif abs(cost) < self.min_order_size:
-            # NOTE: we are in a backtest session, and this may produce lot
-            # of rejected orders, so we will just ignore this case.
             return
-            # order.mark_rejected(self, 'Cost < Min Order Size')
+            # order.mark_rejected(self, track=False)
+        elif order.is_open and order.side == 'BUY' and order.quantity < 0:
+            order.mark_rejected(
+                self, 'Cannot sell asset for BUY order: %s' % order)
+        elif order.is_open and order.side == 'SELL' and order.quantity > 0:
+            order.mark_rejected(
+                self, 'Cannot buy asset for SELL order: %s' % order)
         elif order.is_open and order.order_type == 'LIMIT' and (
                 quantity > 0 and price > symbol_data['low']):
             order.mark_closed(self)
@@ -192,25 +206,25 @@ class SimulatedBroker(AbstractBroker):
             order.mark_closed(self)
         return order
 
+    # OPTIMIZE: takes a really long time ~10%
     def cancel_pending_orders(self):
-        orders = [o for o in self.portfolio.orders if o.is_open]
-        for order in orders:
+        for order in self.portfolio.open_orders:
             order.mark_cancelled(self)
 
     # TODO: instead allow passing a % which will be added to opening price
     # for limit orders
-    def get_order_price(self, request):
-        symbol = self.datacenter.assets_to_symbol(request.asset, request.base)
-        price = request.limit_price
-        if price is None:
+    def get_order_price(self, advice):
+        symbol = advice.symbol(self)
+        price = advice.limit_price
+        if price is None or advice.order_type == 'MARKET':
             if symbol not in self.datacenter._current_real.index:
                 return
             price = fast_xs(self.datacenter._current_real, symbol)['open']
         return price
 
-    def get_slippage(self, request, direction):
+    def get_slippage(self, advice, direction):
         slippage = 0
-        if request.order_type == 'MARKET':
+        if advice.order_type == 'MARKET':
             slippage = self.context.slippage()/100
             slippage *= -1 if direction < 0 else 1
         return slippage
@@ -218,57 +232,85 @@ class SimulatedBroker(AbstractBroker):
     def get_commission_asset_rate(self, comm_symbol):
         return fast_xs(self.datacenter._current_real, comm_symbol)['close']
 
-    def calculate_order_shares_and_cost(self, request):
-        price = self.get_order_price(request)
-        if not price or request.quantity + request.position == 0:
+    def calculate_order_shares_and_cost(self, advice):
+        # Get the specified LIMIT price or open price of next tick for MARKET
+        price = self.get_order_price(advice)
+
+        # If we can not get price, or if quantity was specified to be 0 (sell
+        # everything) and we do not have any position, do nothin.
+        if not price or (advice.quantity == 0 and not advice.position):
             return (0, 0, 0)
 
         quantity = 0
-        if request.quantity_type == 'SHARE':
-            quantity = request.quantity
-            price = price * (1 + self.get_slippage(request, quantity))
-        elif request.quantity_type == 'PERCENT':
-            required = self.account.equity * request.quantity/100.
-            required = required - request.position * price
-            price = price * (1 + self.get_slippage(request, required))
+        if advice.quantity_type == 'SHARE':
+            # Quantity remains fixed here. Price can be varied.
+            # However, when order size is limited, we have no way to reduce
+            # order size but to decrease quantity.
+            quantity = advice.quantity
+            price = price * (1 + self.get_slippage(advice, quantity))
+        elif advice.quantity_type == 'PERCENT':
+            # Cost remains fixed here. Price/Quantity can be varied.
+            required = self.account.equity * advice.quantity/100.
+            required = required - advice.position * price
+            price = price * (1 + self.get_slippage(advice, required))
             quantity = required/price
 
-        # ensure that we do not hold more than the specified amount of equity
-        # for this asset
-        if self.max_position_held:
-            equity = (request.position + quantity) * price
-            if equity > self.max_position_held:
-                quantity = self.max_position_held/price - request.position
-
+        # lets, calculate the cost of this order
         cost = quantity * price
 
+        # ensure that we do not hold more than the specified amount of equity
+        # for this asset. We decrease the quantity such that the new asset
+        # allocation is equal to max_position_held.
+        if self.max_position_held:
+            equity = (advice.position + quantity) * price
+            if equity > self.max_position_held:
+                quantity = self.max_position_held/price - advice.position
+                cost = quantity * price
+
         # ensure that the cost does not exceed max permittable order size
+        # globally for the broker.
         if self.max_order_size and abs(cost) > self.max_order_size:
             cost = self.max_order_size * (-1 if cost < 0 else 1)
             quantity = cost/price
 
-        # if the request has a max order size defined with it, limit to that
-        if request.max_order_size and abs(cost) > request.max_order_size:
-            cost = request.max_order_size * (-1 if cost < 0 else 1)
+        # if the advice has a max order size defined with it, limit to that
+        if advice.max_order_size and abs(cost) > advice.max_order_size:
+            cost = advice.max_order_size * (-1 if cost < 0 else 1)
             quantity = cost/price
 
         # finally, allow the strategy to modify order cost, quantity or price
         if hasattr(self.strategy, 'transform_order_calculation'):
-            cost, quantity, price = self.strategy.transform_order_calculation(
-                request, cost, quantity, price)
+            tp = price if advice.order_type == 'LIMIT' else None
+            cost, quantity, tp = self.strategy.transform_order_calculation(
+                advice, cost, quantity, tp)
+            if advice.order_type == 'LIMIT' and tp is None:
+                advice.order_type = 'MARKET'
+                advice.limit_price = None
+                price = self.get_order_price(advice)
+                price = price * (1 + self.get_slippage(advice, quantity))
+            elif advice.order_type == 'LIMIT' and price != tp:
+                price = tp
+            elif advice.order_type == 'MARKET' and tp:
+                advice.order_type = 'LIMIT'
+                price = tp
+            quantity = cost/price
 
-        # now that we have the cost
-        return (round(quantity, 8), round(cost, 8), round(price, 8))
+        # ensure that when selling, we cannot sell more than free quantity
+        if quantity < 0 and abs(quantity) > self.account.free[advice.asset]:
+            quantity = -self.account.free[advice.asset]
+            cost = quantity * price
 
-    def calculate_commission(self, request, asset_quantity, order_cost):
+        return (round(quantity, 8), round(price*quantity, 8), round(price, 8))
+
+    def calculate_commission(self, advice, asset_quantity, order_cost):
         comm_rate = 1
         comm_asset = self.context.commission_asset
-        if comm_asset and comm_asset != request.base:
+        if comm_asset and comm_asset != advice.base:
             comm_sym = self.datacenter.assets_to_symbol(
-                comm_asset, request.base)
+                comm_asset, advice.base)
             comm_rate = self.get_commission_asset_rate(comm_sym)
         else:
-            comm_asset = request.base
+            comm_asset = advice.base
         comm = self.context.commission/100. * abs(order_cost)
         comm /= comm_rate
         return (round(comm, 8), comm_asset, comm_rate)
@@ -279,17 +321,17 @@ class CcxtExchangePaperBroker(SimulatedBroker):
         super().__init__()
         self.exchange = getattr(ccxt, exchange)(params)
 
-    def get_slippage(self, request, direction):
+    def get_slippage(self, advice, direction):
         """ 1/3rd slippage than backtests to account for the fact that we are
         placing an order in real time. """
-        return super().get_slippage(request, direction)/3
+        return super().get_slippage(advice, direction)/3
 
-    def get_order_price(self, request):
-        symbol = self.datacenter.assets_to_symbol(request.asset, request.base)
-        price = request.limit_price
+    def get_order_price(self, advice):
+        symbol = advice.symbol(self)
+        price = advice.limit_price
         if price is None:
             book = self.exchange.fetch_order_book(symbol)
-            if request.quantity > 0:
+            if advice.quantity > 0:
                 price = book['bids'][0][0]
             else:
                 price = book['asks'][0][0]
@@ -325,7 +367,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def get_slippage(self, _request, _direction):
+    def get_slippage(self, _advice, _direction):
         return 0
 
     def cancel_pending_orders(self, symbol=None):
@@ -341,8 +383,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             if not order.id or isnan(order.id) or not order.is_open:
                 continue
             try:
-                symbol = self.datacenter.assets_to_symbol(
-                    order.asset, order.base)
+                symbol = order.symbol(self)
                 self.exchange.cancel_order(order.id, symbol)
                 self.context.notify(
                     "Cancelled open %4s order: %s for %s at %.8f" % (
@@ -359,12 +400,12 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
 
     def create_order_after_placement(self, order_requested_event,
                                      exchange=None):
-        request = order_requested_event.item
+        advice = order_requested_event.item
         if not exchange:
             exchange = self.datacenter.exchange.name
 
-        quantity, cost, price = self.calculate_order_shares_and_cost(request)
-        order = Order(request, exchange, quantity, cost, price,
+        quantity, cost, price = self.calculate_order_shares_and_cost(advice)
+        order = Order(advice, exchange, quantity, cost, price,
                       0, self.context.commission_asset)
         order.mark_created(self)
         return order
@@ -405,7 +446,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         price = order.fill_price
         quantity = order.quantity
         cost = order.order_cost
-        symbol = self.datacenter.assets_to_symbol(order.asset, order.base)
+        symbol = order.symbol(self)
 
         market_data = self.datacenter.load_markets()
         if symbol not in market_data:
@@ -444,7 +485,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
 
         for idx, order in enumerate(orders):
             resp = {}
-            symbol = self.datacenter.assets_to_symbol(order.asset, order.base)
+            symbol = order.symbol(self)
 
             try:
                 resp = self.exchange.fetch_order(order.id, symbol)

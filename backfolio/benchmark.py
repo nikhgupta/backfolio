@@ -41,6 +41,7 @@ class BaseBenchmark(object):
         self._cache = join(self.data_dir, "%s.csv" % self._cache_name)
         if self._cache_name is None:
             self._cache = None
+        return self
 
     @property
     def account(self):
@@ -92,7 +93,7 @@ class BaseBenchmark(object):
         data.index = pd.to_datetime(data.index)
         data.index.name = 'time'
         if group_daily:
-            data = data.groupby(pd.Grouper(freq='D')).first()
+            data = data.groupby(pd.Grouper(freq='D')).last()
 
         if 'open' in data:
             data['returns'] = data['open']/data['open'].shift(1) - 1

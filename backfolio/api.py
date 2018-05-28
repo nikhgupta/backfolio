@@ -1,6 +1,10 @@
 import os
-from random import seed, random
+import math
+import random
+import pandas as pd
+import empyrical as ep
 from tabulate import tabulate
+import matplotlib.pyplot as plt
 
 from .portfolio import BasePortfolio
 from .account import SimulatedAccount, CcxtExchangeAccount
@@ -9,6 +13,7 @@ from .datacenter import CryptocurrencyDatacenter as CryptoDC
 from .broker import SimulatedBroker, CcxtExchangeBroker
 from .notifier import FileLogger, SlackNotifier
 from .benchmark import SymbolAsBenchmark, CryptoMarketCapAsBenchmark
+from .core.utils import fast_xs
 from .reporter import (
     BaseReporter,
     CashAndEquityReporter,
@@ -18,11 +23,12 @@ from .reporter import (
 
 def ccxt_backtest(strat, start_time=None, end_time=None,
                   timeframe='1h', exchange='bittrex',
-                  refresh=False, slippage=True,
+                  refresh=False, slippage=True, run=True,
                   balance={"BTC": 1}, initial_capital=None, commission=0.25,
                   benchmarks=False, debug=True, doprint=True, plots=True,
-                  before_run=None, log_axis=False):
+                  before_run=None, log_axis=False, each_tick=False):
     pf = BacktestSession()
+    random.seed(1)
     pf.debug = debug
     pf.refresh_history = refresh
 
@@ -36,8 +42,9 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
     pf.reporters = [
         OrdersReporter(),
         CashAndEquityReporter(bounds=False, mean=True, plot=plots, period=24*7,
-                              log_axis=False, each_tick=False),
-        BaseReporter(log_axis=log_axis, daily=False, plot=plots)]
+                              log_axis=False, each_tick=each_tick),
+        BaseReporter(log_axis=log_axis, daily=False,
+                     plot=plots, doprint=False)]
 
     if benchmarks:
         pf.benchmarks = [
@@ -47,8 +54,7 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
         ]
 
     if slippage:
-        seed(1)
-        pf.slippage = lambda: 0.15 + random() * 0.5
+        pf.slippage = lambda: 0.15 + random.random() * 0.5
 
     pf.strategy = strat
     pf.start_time = start_time
@@ -57,11 +63,12 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
     if before_run:
         before_run(pf)
 
-    pf.run()
+    if run:
+        pf.run()
 
-    if doprint:
-        print(tabulate(
-            pf.reporters[2].data, headers='keys', tablefmt="orgtbl"))
+        if doprint:
+            print(tabulate(
+                pf.reporters[2].data, headers='keys', tablefmt="orgtbl"))
 
     return pf
 
@@ -111,3 +118,79 @@ def ccxt_live(name, session, strat, cred, slack_url,
     pf.session = session
     pf.run(report=report)
     return pf
+
+
+def quick_bt(history, lookup, top=None, bottom=None, ft=None, tt=None,
+             fee=0.05, annualization=365, rebalance=None, plots=True):
+    """
+    Quick vectorized backtesting to explore worthy strategies.
+    """
+    if ft:
+        history = history[:, ft:]
+    if tt:
+        history = history[:, :tt]
+
+    close = history[:, :, 'close']
+    if rebalance:
+        close = close.resample(rebalance).last()
+    ret = close.pct_change()
+
+    pidx, bar, war = None, {}, {}
+    for idx, row in ret.iterrows():
+        if pidx:
+            scorers = lookup.loc[pidx].dropna().sort_values(ascending=0).index
+            bar[idx] = math.fsum([fast_xs(ret, idx)[asset] - 2*fee/100
+                                  for asset in scorers[:top]])
+            war[idx] = math.fsum([fast_xs(ret, idx)[asset] - 2*fee/100
+                                  for asset in scorers[-bottom:]])
+        pidx = idx
+
+    df = pd.DataFrame()
+    df['market'] = (ret.sum(axis=1)/ret.count(axis=1)).cumsum()
+    df['top'] = (pd.Series(bar)/top).cumsum()
+    df['bottom'] = (pd.Series(war)/bottom).cumsum()
+
+    md, td, bd = df['market'].diff(), df['top'].diff(), df['bottom'].diff()
+    msh = ep.sharpe_ratio(md, annualization=annualization)
+    tsh = ep.sharpe_ratio(td, annualization=annualization)
+    bsh = ep.sharpe_ratio(bd, annualization=annualization)
+    mso = ep.sortino_ratio(md, annualization=annualization)
+    tso = ep.sortino_ratio(td, annualization=annualization)
+    bso = ep.sortino_ratio(bd, annualization=annualization)
+    mdd = ep.max_drawdown(md)
+    tdd = ep.max_drawdown(td)
+    bdd = ep.max_drawdown(bd)
+    tcorr = df['market'].corr(df['top'])
+    tcov = df['market'].cov(df['top'])
+    bcorr = df['market'].corr(df['bottom'])
+    bcov = df['market'].cov(df['bottom'])
+
+    common = "returns: %7.2fx, sharpe: %7.2f, sortino: %7.2f, drawdn: %5.2f%%"
+    print(("market %s" % common) % (
+        df.market.iloc[-1], msh, mso, mdd))
+    print(("bottom %s, corr: %%5.2f, cov: %%7.2f" % common) % (
+        df.bottom.iloc[-1], bsh, bso, bdd, bcorr, bcov))
+    print(("   top %s, corr: %%5.2f, cov: %%7.2f" % common) % (
+        df.top.iloc[-1], tsh, tso, tdd, tcorr, tcov))
+
+    if plots:
+        fig, axs = plt.subplots(1, 3)
+        fig.set_size_inches(16, 16/3)
+        fig.suptitle('Assets Score Performance - (Log Scale)', fontsize=20)
+        df[['market', 'top']].plot(
+            kind='area', stacked=False, ax=axs[0], linewidth=0,
+            color=['b', 'g'], title='Top Scorer Performance')
+        df[['market', 'bottom']].plot(
+            kind='area', stacked=False, ax=axs[1], linewidth=0,
+            color=['b', 'r'], title='Bottom Scorer Performance')
+
+        linear = df['market'].apply(lambda _: 1.025**(1/24) - 1).cumsum()
+        P = df['top'].rolling(24).cov(linear).plot(
+            kind='area', stacked=False, linewidth=0,
+            color='g', title='Portfolio vs. Market', yticks=None)
+        df['bottom'].rolling(24).cov(linear).plot(
+            kind='area', stacked=False, linewidth=0,
+            color='r', alpha=0.1, title='Portfolio vs. Market', yticks=None)
+        P.axes.get_yaxis().set_visible(False)
+
+    return df

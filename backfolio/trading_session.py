@@ -174,6 +174,9 @@ class TradingSession:
     def add_reporter(self, reporter):
         self._reporters.append(reporter)
 
+    def run_report(self, reporter):
+        reporter.reset(self).generate_summary_report()
+
     @property
     def benchmarks(self):
         if self._benchmarks is None:
@@ -332,6 +335,7 @@ class TradingSession:
 
     def reset(self):
         self._with_each_component(self.reset_component)
+        return self
 
     def last_run_timestamp(self):
         if len(self.portfolio.timeline) > 0:
@@ -396,8 +400,7 @@ class TradingSession:
             if event.item.time == self.last_run_timestamp():
                 return
 
-            data = event.item.history.dropna()
-            data = data[data['volume'] > 0]
+            data = event.item.history
             self._current_time = event.item.time
             self.strategy.data = data
             self.strategy.tick = event.item
@@ -415,7 +418,6 @@ class TradingSession:
 
         elif type(event) == OrderRequestedEvent:
             self._run_hook('after_order_placed', event)
-            self.portfolio.record_order_placement_request(event)
             self.broker.create_order_after_placement(event)
             self._run_hook('after_order_placed_done', event)
 
@@ -460,6 +462,7 @@ class BacktestSession(TradingSession):
         self._mode = 'backtest'
 
     def _get_next_tick(self):
+        ts = None
         if self.datacenter._continue_backtest:
             ts = self.datacenter.next_tick()
         return ts

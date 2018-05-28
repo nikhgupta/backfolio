@@ -10,6 +10,7 @@ class AbstractNotifier:
 
     def reset(self, context=None):
         self.context = context
+        return self
 
     @property
     def current_time(self):
