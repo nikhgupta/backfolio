@@ -150,11 +150,11 @@ class SimulatedBroker(AbstractBroker):
         quantity, cost, price = self.calculate_order_shares_and_cost(advice)
         if not quantity and not price:  # empty order
             return
-        comm, comm_asset, comm_rate = self.calculate_commission(
+        comm, comm_asset, comm_rate, comm_cost = self.calculate_commission(
             advice, quantity, cost)
 
         order = Order(advice, exchange, quantity, cost,
-                      price, comm, comm_asset)
+                      price, comm, comm_asset, comm_cost)
         order.mark_created(self)
         return order
 
@@ -230,7 +230,7 @@ class SimulatedBroker(AbstractBroker):
         return slippage
 
     def get_commission_asset_rate(self, comm_symbol):
-        return fast_xs(self.datacenter._current_real, comm_symbol)['close']
+        return fast_xs(self.datacenter._current_real, comm_symbol)['open']
 
     def calculate_order_shares_and_cost(self, advice):
         # Get the specified LIMIT price or open price of next tick for MARKET
@@ -311,9 +311,9 @@ class SimulatedBroker(AbstractBroker):
             comm_rate = self.get_commission_asset_rate(comm_sym)
         else:
             comm_asset = advice.base
-        comm = self.context.commission/100. * abs(order_cost)
-        comm /= comm_rate
-        return (round(comm, 8), comm_asset, comm_rate)
+        comm_cost = self.context.commission/100. * abs(order_cost)
+        comm = comm_cost/comm_rate
+        return (round(comm, 8), comm_asset, comm_rate, comm_cost)
 
 
 class CcxtExchangePaperBroker(SimulatedBroker):
@@ -364,8 +364,8 @@ class CcxtExchangePaperBroker(SimulatedBroker):
 
 
 class CcxtExchangeBroker(CcxtExchangePaperBroker):
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def get_slippage(self, _advice, _direction):
         return 0
@@ -496,7 +496,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             order.status = resp['status']
             order.remaining = resp['remaining']
             order.updated_at = resp['datetime']
-            self.portfolio.orders[idx] = order.data
+            self.portfolio.orders[idx] = order
 
             if order.is_closed:
                 order.mark_closed(self)

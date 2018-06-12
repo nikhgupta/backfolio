@@ -220,8 +220,41 @@ class OrdersReporter(AbstractReporter):
         super().__init__(name='orders-reporter')
 
     def generate_summary_report(self):
+        og = self.portfolio.order_groups
+        if og.empty:
+            return
+        cog = pd.DataFrame(og[og.status == 'CLOSED'])
+        if cog.empty:
+            return
+            
+        print("Order Placement Summary")
+        cog['duration'] = (cog['ended_at'].astype(int)
+                           - cog['started_at'].astype(int))/3600/1e9
+        wins = cog[cog.total_profits > 0]
+        lost = cog[cog.total_profits < 0]
+        wr = len(wins)/len(cog)*100
+        pf = wins.total_profits.sum()/abs(lost.total_profits.sum())
+        gog = og.groupby('asset').sum()
+        gog['buy_price'] = gog['buy_cost']/gog['buy_quantity']
+        gog['sell_price'] = gog['sell_cost']/gog['sell_quantity']
+
+        summary = self.portfolio.last_positions_and_equities_at_tick_close()
+        gog['remaining_equity'] = pd.Series(summary['asset_equity'])
+        gog['commission_deducted'] = self.portfolio.closed_orders.groupby(
+            'commission_asset').sum().commission_cost
+        gog['commission_deducted'] = gog['commission_deducted'].fillna(0)
+        gog['net_profits'] = (gog['total_profits'] + gog['remaining_equity']
+                              + gog['commission_deducted'])
+        gog['profit%'] = gog['net_profits']/gog['buy_cost']*100
+        actual = gog.net_profits.sum() + self.portfolio.timeline.iloc[0].equity
+        reported = self.portfolio.timeline.iloc[-1].equity
+        error = actual/reported*100-100
+        lt, wt = lost.duration.mean(), wins.duration.mean()
+        self._data = gog.sort_values(by='profit%', ascending=0)
+
         total = len(self.portfolio.orders)
         if total:
+            def hr(sep, size=75): print("+"+sep*size+"+")
             filled = len(self.portfolio.filled_orders)/total*100
             rejected = len(self.portfolio.rejected_orders)/total*100
             unfilled = len(self.portfolio.unfilled_orders)/total*100
@@ -229,13 +262,22 @@ class OrdersReporter(AbstractReporter):
             ignored = 100 - (filled + rejected + unfilled + open)
             each_tick = total / len(self.portfolio.timeline)
 
-            print("Order Placement Summary")
-            print("=======================")
-            print(("Total: %d orders, Per Tick: %.2f orders\n" +
-                   "Filled: %.2f%%, Unfilled: %.2f%%, " +
-                   "Rejected: %.2f%%, Open: %.2f%%, Ignored: %.2f%%\n") % (
-                      total, each_tick, filled, unfilled,
-                      rejected, open, ignored))
+            hr("=")
+            print(("| WinR:  %7.2f%% | PF: %7.2fx | WD: %7.2fT " +
+                   "| LD: %.2fT | Err: %6.2f%%  |") % (wr, pf, wt, lt, error))
+            hr('-')
+            print(("| ClosedTrades: %5d | TotalTrades: %5d " +
+                   "| OrdersInClosedTrades: %5d    |") % (
+                      len(cog), len(og), cog.num_orders.sum()))
+            hr("=")
+            print(("| TotalOrders: %6d | PerTick: %7.2f | Closed: %6.2f%% " +
+                   "| Open: %5.2f%%   |") % (total, each_tick, filled, open))
+            hr("-")
+            print(("| Rejected:    %5.2f%% | Unfilled: %5.2f%% " +
+                   "| Ignored: %5.2f%%                  |") % (
+                      rejected, unfilled, ignored))
+            hr("=")
+        return self.data
 
 
 class MonteCarloAnalysis(AbstractReporter):

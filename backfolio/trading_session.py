@@ -175,7 +175,7 @@ class TradingSession:
         self._reporters.append(reporter)
 
     def run_report(self, reporter):
-        reporter.reset(self).generate_summary_report()
+        return reporter.reset(self).generate_summary_report()
 
     @property
     def benchmarks(self):
@@ -348,6 +348,7 @@ class TradingSession:
 
         self.loop_index = 0
         self._before_trading_start()
+        self.portfolio._load_order_groups()
         self._run_hook('before_trading_start')
 
         while True:
@@ -477,7 +478,7 @@ class PaperTradingSession(TradingSession):
 
     @property
     def current_time(self):
-        return datetime.datetime.now()
+        return datetime.now()
 
     @property
     def refresh_history(self):

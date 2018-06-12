@@ -45,13 +45,11 @@ class Advice:
 
     @classmethod
     def _construct_from_data(cls, data, _portfolio):
-        advice = cls(data['strategy'], data['symbol'],
+        advice = cls(data['strategy'], data['asset'], data['base'],
                      data['exchange'], data['last_price'], data['quantity'],
                      data['quantity_type'], data['order_type'],
-                     data['limit_price'], data['time'], data['id'])
-        for field in ['time', 'max_cost', 'side', 'position']:
-            if field in data and data[field]:
-                setattr(advice, field, data[field])
+                     data['limit_price'], data['max_cost'], data['side'],
+                     data['position'], data['time'], data['id'])
         return advice
 
     @property
@@ -106,7 +104,8 @@ class Order:
     _ids = []
 
     def __init__(self, advice, exchange, quantity, order_cost,
-                 fill_price, commission=0, commission_asset=None, local_id=0):
+                 fill_price, commission=0, commission_asset=None,
+                 commission_cost=0, local_id=0):
         self._id = 0
         self._local_id = local_id if local_id else generate_id('order', self)
         self.advice = advice
@@ -119,17 +118,18 @@ class Order:
         self.fill_price = fill_price
         self.commission = commission
         self._commission_asset = commission_asset
+        self.commission_cost = commission_cost
         self._updated_at = None
         self._time = None
 
     @classmethod
     def _construct_from_data(cls, data, portfolio):
         advice = detect(portfolio.advice_history,
-                        lambda req: req['id'] == data['advice_id'])
-        advice = Advice._construct_from_data(advice, portfolio)
+                        lambda req: req.id == data['advice_id'])
         order = cls(advice, data['exchange'], data['quantity'],
                     data['order_cost'], data['fill_price'], data['commission'],
-                    data['commission_asset'], data['local_id'])
+                    data['commission_asset'], data['commission_cost'],
+                    data['local_id'])
         for field in ['id', 'time', 'status', 'updated_at', 'remaining']:
             if field in data and data[field]:
                 setattr(order, field, data[field])
@@ -173,7 +173,7 @@ class Order:
         if self.advice.side:
             return self.advice.side
         else:
-            return 'buy' if self.quantity > 0 else 'sell'
+            return 'BUY' if self.quantity > 0 else 'SELL'
 
     @side.setter
     def side(self, val):
@@ -251,8 +251,6 @@ class Order:
         return self.remaining and self.remaining != self.quantity
 
     def mark_filled(self, context):
-        if self.status != 'open':
-            raise ValueError("Cannot mark order as closed: %s" % self)
         self.remaining = 0
         self.status = 'closed'
         self.updated_at = context.current_time
@@ -260,8 +258,6 @@ class Order:
         return self
 
     def mark_rejected(self, context, message=None, track=True):
-        if self.status != 'open':
-            raise ValueError("Cannot mark order as rejected: %s" % self)
         self.status = 'rejected'
         self.updated_at = context.current_time
         if track:
@@ -269,8 +265,6 @@ class Order:
         return self
 
     def mark_unfilled(self, context):
-        if self.status != 'open':
-            raise ValueError("Cannot mark order as unfilled: %s" % self)
         self.status = 'cancelled'
         self.cost = 0
         self.updated_at = context.current_time
@@ -278,14 +272,10 @@ class Order:
         return self
 
     def mark_created(self, context):
-        if self.status != 'open':
-            raise ValueError("Cannot mark order as created: %s" % self)
         self.updated_at = context.current_time
         context.events.put(OrderCreatedEvent(self))
 
     def mark_pending(self, context):
-        if self.status != 'open':
-            raise ValueError("Cannot mark order as pending: %s" % self)
         self.updated_at = context.current_time
         context.events.put(OrderPendingEvent(self))
 
@@ -305,7 +295,105 @@ class Order:
                 "order_cost": self.order_cost, "fill_price": self.fill_price,
                 "order_type": self.order_type, "status": self.status,
                 "commission": self.commission, "updated_at": self.updated_at,
-                "commission_asset": self.commission_asset}
+                "commission_asset": self.commission_asset,
+                "commission_cost": self.commission_cost}
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.data)
+
+
+class OrderGroup:
+    def __init__(self, order, local_id=0):
+        self.asset = order.asset
+        self._local_id = local_id if local_id else generate_id('ogroup', self)
+        self.orders = [order]
+        self.status = 'OPEN'
+        self.buy_quantity = 0
+        self.buy_cost = 0
+        self.sell_quantity = 0
+        self.sell_cost = 0
+        self.started_at = order.time
+        self.ended_at = order.time
+        self.commission = order.commission_cost
+        self.local_id = order.local_id
+        if order.is_buy:
+            self.buy_quantity = order.quantity
+            self.buy_cost = order.order_cost
+        elif order.is_sell:
+            self.sell_quantity = order.quantity
+            self.sell_cost = order.order_cost
+
+    @classmethod
+    def add_order_to_groups(cls, order, groups):
+        matched = [og for og in groups if og.asset == order.asset]
+        if not matched:
+            groups.append(cls(order))
+        else:
+            last_group = matched[-1]
+            if last_group.closed:
+                groups.append(cls(order))
+            else:
+                last_group.add_order(order)
+        return groups
+
+    @classmethod
+    def load_all(cls, orders):
+        groups = []
+        for order in orders:
+            cls.add_order_to_groups(order, groups)
+        return groups
+
+    @property
+    def buy_price(self):
+        return self.buy_cost/self.buy_quantity if self.buy_quantity else 0
+
+    @property
+    def sell_price(self):
+        return self.sell_cost/self.sell_quantity if self.sell_quantity else 0
+
+    @property
+    def remaining_quantity(self):
+        return self.buy_quantity - self.sell_quantity
+
+    @property
+    def total_profits(self):
+        return self.sell_cost - self.buy_cost - self.commission
+
+    @property
+    def closed(self):
+        return self.status == 'CLOSED'
+
+    @property
+    def open(self):
+        return self.status == 'OPEN'
+
+    def add_order(self, order):
+        self.orders.append(order)
+        if order.asset != self.asset:
+            raise ValueError("Invalid order being added to group: %s" % order)
+        if order.is_buy:
+            self.buy_quantity += order.quantity
+            self.buy_cost += order.order_cost
+        elif order.is_sell:
+            self.sell_quantity += -order.quantity
+            self.sell_cost += -order.order_cost
+        self.ended_at = order.time
+        self.commission += order.commission_cost
+        if self.remaining_quantity < 1e-8:
+            self.status = 'CLOSED'
+        return self
+
+    def __repr__(self):
+        return "%s(%s)" % (self.__class__.__name__, self.data)
+
+    @property
+    def data(self):
+        return {"local_id": self.local_id, "started_at": self.started_at,
+                "ended_at": self.ended_at, "asset": self.asset,
+                "buy_quantity": self.buy_quantity, "buy_cost": self.buy_cost,
+                "buy_price": self.buy_price, "sell_price": self.sell_price,
+                "sell_quantity": self.sell_quantity,
+                "sell_cost": self.sell_cost,
+                "remaining_quantity": self.remaining_quantity,
+                "total_profits": self.total_profits, "status": self.status,
+                "commission": self.commission, "num_orders": len(self.orders)}

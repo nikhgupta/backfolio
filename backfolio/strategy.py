@@ -28,9 +28,20 @@ class BaseStrategy(object):
 
     def __init__(self):
         self.session_data = []
+        self._selected_symbols = []
         self.session_fields = ['session_data']
 
+    @property
+    def symbols(self):
+        return self._selected_symbols
+
+    @symbols.setter
+    def symbols(self, arr=[]):
+        self._selected_symbols = arr
+
     def transform_history(self, panel):
+        if self.symbols:
+            panel = panel[self.symbols]
         return panel
 
     def reset(self, context):
@@ -208,6 +219,7 @@ class EwUCRPStrategy(BaseStrategy):
         self.broker.min_order_size = 0.001
 
     def transform_history(self, panel):
+        panel = super().transform_history(panel)
         close = panel[:, :, 'close']
         volume = panel[:, :, 'volume']
         panel.loc[:, :, 'flow'] = (close*volume).rolling(
@@ -403,6 +415,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         Look into `transform_tick_data` for an additional approach to
         specify `score` and `weight` at each tick.
         """
+        panel = super().transform_history(panel)
         panel.loc[:, :, 'flow'] = (
             panel[:, :, 'close'] * panel[:, :, 'volume']).rolling(
             self.flow_period).mean()

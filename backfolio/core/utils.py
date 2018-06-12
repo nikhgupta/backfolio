@@ -1,10 +1,8 @@
-import math
 import string
 import pathlib
+import importlib
 import pandas as pd
-import empyrical as ep
 from random import choice
-import matplotlib.pyplot as plt
 from os.path import join, isfile
 
 
@@ -46,41 +44,40 @@ def load_df(path, name, container, field, array=True):
     path = join(path, "%s.csv" % name)
     if isfile(path):
         try:
-            data = pd.read_csv(path, index_col=None)
+            data = pd.read_csv(path, index_col=0)
             if data is not None:
                 if 'time' in data.columns:
                     data['time'] = pd.to_datetime(data['time'])
-                data = data[~data.duplicated(keep='last')]
+                if not data.empty:
+                    data = data[~data.duplicated(keep='last')]
                 data = data.to_dict(orient='records')
+                if data and 'kind' in data[0]:
+                    module = importlib.import_module('..object', __name__)
+                    cls = getattr(module, data[0]['kind'])
+                    data = [cls._construct_from_data(item, container)
+                            for item in data]
                 setattr(container, field, data if array else data[0])
         except pd.io.common.EmptyDataError:
             pass
 
 
-def as_df(items, index=None, dupes='all'):
+def as_df(items):
     """ Convert an array of dicts into a pandas dataframe """
     if len(items) == 0:
         return pd.DataFrame()
+
+    if hasattr(items[0], 'data'):
+        cls = type(items[0]).__name__
+        items = [{**item.data, **{"kind": cls}} for item in items]
+
     df = pd.DataFrame.from_records(items)
-    if index and index in df.columns:
-        df = df.set_index(index)
-    elif index and 'index' in df.columns:
-        df = df.set_index('index')
-        df.index.name = index
-    df = drop_duplicates(df, dupes == 'index')
+    if 'local_id' in df.columns:
+        df = df[~df['local_id'].duplicated(keep='last')]
+    elif 'id' in df.columns:
+        df = df[~df['id'].duplicated(keep='last')]
+    elif 'time' in df.columns:
+        df = df[~df['time'].duplicated(keep='last')]
     return df
-
-
-def items_as_df(items, index=None, dupes='all'):
-    items = [item.data for item in items]
-    return as_df(items, index, dupes)
-
-
-def drop_duplicates(df, index=False):
-    if index:
-        return df[~df.index.duplicated(keep='last')]
-    else:
-        return df[~df.duplicated(keep='last')]
 
 
 def save_df(path, name, data):
@@ -88,7 +85,7 @@ def save_df(path, name, data):
     if data is None:
         return
     path = join(path, '%s.csv' % name)
-    as_df(data).to_csv(path, index=False)
+    as_df(data).to_csv(path, index=True)
 
 
 def detect(items, pred):

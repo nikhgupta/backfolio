@@ -338,7 +338,7 @@ class BaseDatacenter(object):
 
 class CryptocurrencyDatacenter(BaseDatacenter):
     def __init__(self, exchange, *args,
-                 to_sym='BTC', limit=10000, params={}, **kwargs):
+                 to_sym='BTC', limit=1000, params={}, **kwargs):
         super().__init__(*args, **kwargs)
         self.to_sym = to_sym
         self.exchange = getattr(ccxt, exchange)(params)
@@ -354,7 +354,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         return "crypto/%s/%s" % (self.exchange.name, self.timeframe)
 
     def load_markets(self):
-        if not self._market_data and self.refresh_history:
+        if self.refresh_history:
             self._market_data = self.exchange.load_markets(True)
         elif self.history is not None:
             self._market_data = dict(

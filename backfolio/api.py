@@ -31,6 +31,7 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
     random.seed(1)
     pf.debug = debug
     pf.refresh_history = refresh
+    plots = plots if benchmarks else False
 
     pf.commission = commission
     pf.datacenter = CryptoDC(exchange, timeframe)
@@ -81,6 +82,10 @@ def binance_backtest(*args, **kwargs):
     return ccxt_backtest(*args, **kwargs)
 
 
+def bittrex_backtest(*args, **kwargs):
+    return ccxt_backtest(*args, **kwargs)
+
+
 def ccxt_live(name, session, strat, cred, slack_url,
               timeframe='1h', exchange='bittrex', poll_frequency=None,
               debug=True, slippage=True, commission=0.25, report=True):
@@ -103,8 +108,8 @@ def ccxt_live(name, session, strat, cred, slack_url,
         slack_url = os.environ['BACKFOLIO_SLACK_URL']
 
     opts = {**cred, **{'adjustForTimeDifference': True}}
-    pf.broker = CcxtExchangeBroker(exchange, opts)
-    pf.account = CcxtExchangeAccount(exchange, opts)
+    pf.broker = CcxtExchangeBroker(exchange, params=opts)
+    pf.account = CcxtExchangeAccount(exchange, params=opts)
 
     pf.reporters = [
         OrdersReporter(),

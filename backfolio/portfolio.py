@@ -1,9 +1,11 @@
+import math
 import numpy as np
 import pandas as pd
 from os.path import join
 
+from .core.object import OrderGroup
 from .core.event import OrderRequestedEvent
-from .core.utils import as_df, items_as_df, make_path, fast_xs
+from .core.utils import as_df, make_path, fast_xs
 
 
 class BasePortfolio(object):
@@ -36,10 +38,11 @@ class BasePortfolio(object):
         self.rejected_orders = []
         self.unfilled_orders = []
         self._converted_to_pandas = False
+        self.last_tick = None
 
         self.session_fields = ['timeline', 'asset_equity', 'advice_history',
                                'orders', 'filled_orders', 'rejected_orders',
-                               'unfilled_orders', 'open_orders']
+                               'unfilled_orders', 'open_orders', 'positions']
         return self
 
     @property
@@ -97,7 +100,7 @@ class BasePortfolio(object):
     def equity_per_asset(self):
         equity = self.asset_equity[-1].copy()
         equity.pop("time")
-        equity.pop("BTC")
+        # equity.pop("BTC")
         return equity
 
     # TODO: When an asset does not trade wrt base currency, but has tick data
@@ -111,25 +114,43 @@ class BasePortfolio(object):
         This assumes that tick data provides exchange rates for the assets vs
         the base currency.
         """
-        equity = {}
-        time = tick_event.item.time
-        data = tick_event.item.history
+        self.last_tick = tick_event.item
+        res = self.last_positions_and_equities_at_tick_open()
+        self.asset_equity.append(
+            {**res['asset_equity'], **{"time": res['time']}})
+        self.positions.append(
+            {**res['positions'], **{"time": res['time']}})
+        self.timeline.append(
+            {**res['summary'], **{"time": res['time']}})
 
+    def last_positions_and_equities_at_tick_open(self, field='open'):
+        base = self.context.base_currency
+        resp = {"positions": self.account.total, "asset_equity": {},
+                "time": None, "summary": {
+                   "equity": 0, "cash": self.account.cash,
+                   "total_cash": self.account.total[base]}}
+
+        if self.last_tick is None:
+            return resp
+
+        data = self.last_tick.history
         for asset, quantity in self.account.total.items():
             symbol = self.datacenter.assets_to_symbol(asset)
             if asset == self.context.base_currency:
-                equity[asset] = quantity
+                resp['asset_equity'][asset] = quantity
             elif symbol in data.index:
-                price = fast_xs(data.fillna(0), symbol)['open']
-                equity[asset] = quantity * price
+                price = fast_xs(data.fillna(0), symbol)[field]
+                resp['asset_equity'][asset] = quantity * price
             else:
-                equity[asset] = 0
+                resp['asset_equity'][asset] = 0
 
-        total_equity = sum([v for k, v in equity.items()])
-        self.asset_equity.append({**equity, **{"time": time}})
-        self.positions.append({**self.account.total, **{"time": time}})
-        self.timeline.append({"time": time, "equity": total_equity,
-                              "cash": self.account.cash})
+        resp['time'] = self.last_tick.time
+        resp['summary']['equity'] = math.fsum(
+            [v for k, v in resp['asset_equity'].items()])
+        return resp
+
+    def last_positions_and_equities_at_tick_close(self):
+        return self.last_positions_and_equities_at_tick_open(field='close')
 
     def record_advice_from_strategy(self, advice_event):
         self.advice_history.append(advice_event.item)
@@ -150,6 +171,7 @@ class BasePortfolio(object):
         self.filled_orders.append(order)
         if order in self.open_orders:
             self.open_orders.remove(order)
+        OrderGroup.add_order_to_groups(order, self.order_groups)
 
     def record_rejected_order(self, rejected_order_event):
         order = rejected_order_event.item
@@ -177,6 +199,9 @@ class BasePortfolio(object):
     def trading_session_tick_complete(self):
         pass
 
+    def _load_order_groups(self):
+        self.order_groups = OrderGroup.load_all(self.closed_orders)
+
     @property
     def closed_orders(self):
         if self._converted_to_pandas:
@@ -185,20 +210,17 @@ class BasePortfolio(object):
             return [o for o in self.orders if o.is_closed]
 
     def trading_session_complete(self):
-        # record advices
-        self.advice_history = items_as_df(self.advice_history, 'id')
-        # record orders
-        self.orders = items_as_df(self.orders, 'local_id')
-        self.open_orders = items_as_df(self.open_orders, 'local_id')
-        self.filled_orders = items_as_df(self.filled_orders, 'local_id')
-        self.rejected_orders = items_as_df(self.rejected_orders, 'local_id')
-        self.unfilled_orders = items_as_df(self.unfilled_orders, 'local_id')
-        # record asset quantity/position and equity over time
-        self.positions = as_df(self.positions, 'time', dupes='index')
-        self.asset_equity = as_df(self.asset_equity, 'time', dupes='index')
+        props = ['advice_history', 'orders', 'open_orders', 'filled_orders',
+                 'rejected_orders', 'unfilled_orders', 'order_groups',
+                 'positions', 'asset_equity', 'timeline']
+        for prop in props:
+            setattr(self, prop, as_df(getattr(self, prop)))
 
-        # returns, cumulative returns, commission paid, cash and total equity
-        self.timeline = as_df(self.timeline, 'time', dupes='index')
+        for prop in ['positions', 'asset_equity', 'timeline']:
+            prop = getattr(self, prop)
+            if not prop.empty:
+                prop.set_index('time', inplace=True)
+
         if 'commission_paid' in self.timeline.columns:
             self.timeline['commission_paid'].fillna(0, inplace=True)
             self.timeline['commission_paid'] = \
