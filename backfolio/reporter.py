@@ -186,7 +186,7 @@ class CashAndEquityReporter(AbstractReporter):
         comm = self.context.commission_asset
         message = "Equity: %.8f %s, Cash: %.8f %s"
         message %= (data['equity'], base, data['cash'], base)
-        if 'commission_paid' in data:
+        if 'commission_paid' in data and not np.isnan(data['commission_paid']):
             message += ", CommPaid: %.8f %s"
             message %= (data['commission_paid'], comm)
         self.context.notify(message, formatted=True, now=data['time'])
@@ -226,7 +226,7 @@ class OrdersReporter(AbstractReporter):
         cog = pd.DataFrame(og[og.status == 'CLOSED'])
         if cog.empty:
             return
-            
+
         print("Order Placement Summary")
         cog['duration'] = (cog['ended_at'].astype(int)
                            - cog['started_at'].astype(int))/3600/1e9

@@ -114,8 +114,7 @@ def ccxt_live(name, session, strat, cred, slack_url,
     pf.reporters = [
         OrdersReporter(),
         CashAndEquityReporter(bounds=False, mean=True, plot=False,
-                              period=24*7, log_axis=False, each_tick=True),
-        BaseReporter(log_axis=False, daily=False, plot=False)
+                              period=24*7, log_axis=False, each_tick=True)
     ]
 
     pf.notifiers = [FileLogger(name), SlackNotifier(name, slack_url)]

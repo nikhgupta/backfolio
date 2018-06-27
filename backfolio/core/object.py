@@ -170,7 +170,7 @@ class Order:
 
     @property
     def side(self):
-        if self.advice.side:
+        if self.advice.side and self.advice.side in ["BUY", "SELL"]:
             return self.advice.side
         else:
             return 'BUY' if self.quantity > 0 else 'SELL'

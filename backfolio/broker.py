@@ -385,6 +385,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             try:
                 symbol = order.symbol(self)
                 self.exchange.cancel_order(order.id, symbol)
+                order.mark_cancelled(self)
                 self.context.notify(
                     "Cancelled open %4s order: %s for %s at %.8f" % (
                      order.side, order.id, order.asset,
