@@ -93,6 +93,9 @@ class BaseReporter(AbstractReporter):
             name, series = (bm.name, bm.daily)
             pofret = self.portfolio.daily.returns
 
+            if series.empty:
+                continue
+
             # regarding returns obtained from the strategy
             df.loc['final_return', name] = series.cum_returns.iloc[-1]
             df.loc['daily_return', name] = (series.cum_returns.iloc[-1]

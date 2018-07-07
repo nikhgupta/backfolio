@@ -272,11 +272,11 @@ class RebalanceOnScoreStrategy(BaseStrategy):
     Strategy that buy top scoring assets, and sells other assets
     every given time interval.
     """
-    def __init__(self, rebalance=1, assets=3, max_assets=7,
-                 max_order_size=0.12, min_order_size=0.001,
-                 flow_period=12, flow_multiplier=2.5,
+    def __init__(self, rebalance=1, assets=3, max_assets=13,
+                 max_order_size=0, min_order_size=0.001,
+                 flow_period=1, flow_multiplier=2.5,
                  markup_sell=1, markdn_buy=1, reserved_cash=0,
-                 min_commission_asset_equity=3, weighted=False):
+                 min_commission_asset_equity=3, weighted=False, debug=True):
         """
         :param rebalance: number of ticks in a rebalancing period
         :param assets: Number of assets strategy should buy.
@@ -314,6 +314,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         self.min_commission_asset_equity = min_commission_asset_equity
         self.reserved_cash = reserved_cash
         self.weighted = weighted
+        self.debug = debug
 
         self.session_fields = ['state']
         self._last_rebalance = None
@@ -464,8 +465,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         if self.assets:
             limited = self.max_order_size or self.flow_multiplier
             if limited and self.assets < self.max_assets:
-                cash = self.account.cash
-                if (cash > self.max_order_size*self.assets*1.25):
+                equity = self.account.equity
+                if (equity > self.assets**(self.assets**0.2)):
                     self.assets = min(self.max_assets, self.assets+1)
 
     def transform_order_calculation(self, advice, cost, quantity, price):
@@ -495,30 +496,32 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 advice.side = "SELL"
                 if price:
                     price = self.selling_price(
-                        advice.symbol(self), advice.last_price)
+                        advice.symbol(self), {"price": advice.last_price})
 
             elif advice.is_sell and cost > 0 and abs(cost) < th:
                 advice.side = "BUY"
                 if price:
                     price = self.buying_price(
-                        advice.symbol(self), advice.last_price)
+                        advice.symbol(self), {"price": advice.last_price})
         return (cost, quantity, price)
 
-    def selling_price(self, _symbol, tick_price):
+    def selling_price(self, _symbol, data):
         """
         Price at which an asset should be sold.
         MARKET order is used if returned price is None.
         """
         if self.markup_sell is not None:
-            return tick_price*(1+self.markup_sell/100)
+            price = data['price'] if 'price' in data else data['close']
+            return price*(1+self.markup_sell/100)
 
-    def buying_price(self, _symbol, tick_price):
+    def buying_price(self, _symbol, data):
         """
         Price at which an asset should be bought.
         MARKET order is used if returned price is None.
         """
         if self.markdn_buy is not None:
-            return tick_price*(1-self.markdn_buy/100)
+            price = data['price'] if 'price' in data else data['close']
+            return price*(1-self.markdn_buy/100)
 
     def transform_tick_data(self, data):
         """
@@ -710,7 +713,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 asset_data = fast_xs(data, symbol)
                 if asset_equity <= asset_data['required_equity']/100:
                     continue
-                n, price = 0, self.selling_price(symbol, asset_data['close'])
+                n, price = 0, self.selling_price(symbol, asset_data)
                 if asset == self.context.commission_asset:
                     n = self.min_commission_asset_equity
                     price = asset_data['close']
@@ -724,7 +727,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 continue
             asset_data = fast_xs(data, symbol)
             if asset_equity > asset_data['required_equity']:
-                price = self.selling_price(symbol, asset_data['close'])
+                price = self.selling_price(symbol, asset_data)
                 n = asset_data['weight'] * 100
                 if asset == self.context.commission_asset:
                     n = max(self.min_commission_asset_equity, n)
@@ -737,7 +740,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 continue
             asset_data = fast_xs(data, symbol)
             if asset_equity < asset_data['required_equity']:
-                price = self.buying_price(symbol, asset_data['close'])
+                price = self.buying_price(symbol, asset_data)
                 n = asset_data['weight'] * 100
                 if (asset == self.context.commission_asset and
                         asset_equity < min_comm):
@@ -756,7 +759,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         in live mode), notify all connected services about the order.
         """
         order = event.item
-        if order.id:
+        if order.id and self.debug:
             self.notify(
                 "  Created %4s %s order with ID %s for %0.8f %s at %.8f %s" % (
                    order.side, order.order_type, order.id, abs(order.quantity),
@@ -770,8 +773,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         This notifies in backtest mode too.
         """
         order = event.item
-        self.notify(
-            " Rejected %4s %s order for %0.8f %s at %.8f %s (Reason: %s)" % (
-              order.side, order.order_type, abs(order.quantity), order.asset,
-              order.fill_price, order.base, event.reason),
-            formatted=True, now=event.item.time)
+        if self.debug:
+            self.notify(
+                " Rejected %4s %s order for %0.8f %s at %.8f %s (Reason: %s)"
+                % (order.side, order.order_type, abs(order.quantity),
+                   order.asset, order.fill_price, order.base, event.reason),
+                formatted=True, now=event.item.time)

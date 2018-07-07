@@ -383,6 +383,9 @@ class OrderGroup:
             self.status = 'CLOSED'
         return self
 
+    def mark_closed(self):
+        self.status = "CLOSED"
+
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.data)
 

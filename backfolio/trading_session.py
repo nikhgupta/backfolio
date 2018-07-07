@@ -283,7 +283,7 @@ class TradingSession:
 
     def _run_hook(self, name, *args):
         if hasattr(self.strategy, name):
-            getattr(self.strategy, name)(*args)
+            return getattr(self.strategy, name)(*args)
 
     def mutate_datacenter_history(self, refresh=True):
         if refresh:
@@ -366,15 +366,19 @@ class TradingSession:
                 self._run_hook('at_each_tick_start')
 
             while True:
-                try:
-                    event = self.events.get(block=False)
-                except EventQueueEmpty:
-                    break
-                else:
-                    if event is not None:
-                        self._process_event(event)
+                while True:
+                    try:
+                        event = self.events.get(block=False)
+                    except EventQueueEmpty:
+                        break
+                    else:
+                        if event is not None:
+                            self._process_event(event)
 
-            self._run_hook('at_each_tick_end')
+                end = self._run_hook('at_each_tick_end')
+                if end is None or end:
+                    break
+
             self.portfolio.trading_session_tick_complete()
             self._save_state_in_session()
             if report:

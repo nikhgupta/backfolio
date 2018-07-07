@@ -148,7 +148,7 @@ class SimulatedBroker(AbstractBroker):
             exchange = self.datacenter.exchange.name
 
         quantity, cost, price = self.calculate_order_shares_and_cost(advice)
-        if not quantity and not price:  # empty order
+        if abs(quantity) < 1e-8 or price < 1e-8:  # empty order
             return
         comm, comm_asset, comm_rate, comm_cost = self.calculate_commission(
             advice, quantity, cost)

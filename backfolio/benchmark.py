@@ -106,7 +106,9 @@ class BaseBenchmark(object):
             data = data[self.context.start_time:]
         if self.context.end_time:
             data = data[:self.context.end_time]
-        data['cum_returns'] = data['cum_returns']/data['cum_returns'].iloc[0]
+        if len(data['cum_returns']) > 0:
+            data['cum_returns'] = (data['cum_returns'] /
+                                   data['cum_returns'].iloc[0])
         return data
 
     def _fetch_data(self):

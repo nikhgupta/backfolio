@@ -31,7 +31,6 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
     random.seed(1)
     pf.debug = debug
     pf.refresh_history = refresh
-    plots = plots if benchmarks else False
 
     pf.commission = commission
     pf.datacenter = CryptoDC(exchange, timeframe)

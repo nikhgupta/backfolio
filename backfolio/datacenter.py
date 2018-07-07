@@ -42,12 +42,13 @@ class BaseDatacenter(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, timeframe='1d', fill=True):
+    def __init__(self, timeframe='1d', fill=True, resample=None):
         self._name = 'base_datacenter'
         self._selected_symbols = []
         self.timeframe = timeframe
         self.session_fields = []
         self.fill = fill
+        self.resample = resample
 
     def reset(self, context=None, root_dir=None):
         """ Routine to run when trading session is resetted. """
@@ -263,6 +264,12 @@ class BaseDatacenter(object):
             df['high'] = df['high'].fillna(df['close'])
         df['dividend'] = 0
         df['split'] = 1
+        if self.resample:
+            df = df.resample(self.resample).agg({
+                "open": 'first', 'high': 'max',
+                "low": "min", "close": "last",
+                "volume": 'sum', "dividend": 'mean', "split": 'mean'
+            })
         return df
 
     def _cleanup_and_save_symbol_data(self, symbol, df):
@@ -320,6 +327,7 @@ class BaseDatacenter(object):
             try:
                 cdf = self.refresh_history_for_symbol(symbol, cdf)
             except Exception as e:
+                print(e)
                 self.log("Encountered error when downloading data \
                                   for symbol %s:\n%s" % (symbol, str(e)))
                 cdf = None
@@ -338,7 +346,7 @@ class BaseDatacenter(object):
 
 class CryptocurrencyDatacenter(BaseDatacenter):
     def __init__(self, exchange, *args,
-                 to_sym='BTC', limit=1000, params={}, **kwargs):
+                 to_sym='BTC', limit=10000, params={}, **kwargs):
         super().__init__(*args, **kwargs)
         self.to_sym = to_sym
         self.exchange = getattr(ccxt, exchange)(params)
@@ -406,7 +414,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
             cdf = cdf.append(df)
             cdf = cdf[~cdf.index.duplicated(keep='last')]
             cdf = cdf.sort_index(ascending=1)
-            if (df.empty or len(cdf) == plen or
+            if (df.empty or len(cdf) == plen or self.history_limit is None or
                     len(cdf) >= self.history_limit or
                     (self.context and not self.context.backtesting())):
                 break

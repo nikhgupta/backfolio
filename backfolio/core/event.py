@@ -51,7 +51,7 @@ class OrderRequestedEvent(BaseEvent):
     Event emitted when a new order is placed by portfolio for an asset.
     """
     def __init__(self, order_request):
-        super().__init__(order_request, priority=2)
+        super().__init__(order_request, priority=3)
 
 
 class OrderCreatedEvent(BaseEvent):
