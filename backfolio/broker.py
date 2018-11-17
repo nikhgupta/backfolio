@@ -176,17 +176,24 @@ class SimulatedBroker(AbstractBroker):
             order.mark_rejected(self, 'Symbol obsolete: %s' % symbol)
         elif cash < 1e-8:
             order.mark_rejected(self, 'Cash depleted')
-            self.datacenter._continue_backtest = False
+            # self.datacenter._continue_backtest = False
         elif cost >= cash and not pending:
             order.mark_rejected(
                 self,
                 'Insufficient Cash: %0.8f (cost) vs %0.8f (cash)' % (
                     cost, cash))
-        elif comm > comm_asset_balance and not pending:
+        elif ((comm > comm_asset_balance or comm_asset_balance < 0) and
+                not pending):
             order.mark_rejected(
                 self,
                 'Insufficient Brokerage: %0.8f (comm) vs %0.8f (asset bal)' % (
                     comm, comm_asset_balance))
+        elif (order.commission_asset == self.context.base_currency and
+                comm > self.account.cash):
+            order.mark_rejected(
+                self,
+                'Insufficient Cash: %0.8f (comm) vs %0.8f (asset bal)' % (
+                    comm, self.account.cash))
         elif abs(cost) < self.min_order_size:
             return
             # order.mark_rejected(self, track=False)

@@ -705,9 +705,18 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         # first sell everything that is not in selected coins,
         # provided they are worth atleast 1% above the threshold.
         # If the asset is the one in which commission is being deducted,
-        # ensure that we have it at a fixed percent of equity all the time.
+        # ensure tyhat we have it at a fixed percent of equity all the time.
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
+            base = self.context.base_currency
+            if (asset in self.account.total and
+                self.account.total[asset] > 1e-8 and
+                symbol not in data.index and asset != base):
+                self.account.total[base] += asset_equity
+                asset_equity = self.account.total[asset] = 0
+                self.account.locked[asset] = self.account.free[asset] = 0
+                # from IPython import embed; embed()
+
             if (symbol in rejected.index and
                     symbol in data.index and symbol not in selected.index):
                 asset_data = fast_xs(data, symbol)

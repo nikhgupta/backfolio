@@ -167,6 +167,9 @@ class CSVAsBenchmark(BaseBenchmark):
             name = file_name
         super().__init__(name, file_name)
 
+    def _returns_data(self):
+        pass
+
 
 class CryptoMarketCapAsBenchmark(BaseBenchmark):
     def __init__(self, include_btc=False, cache_name=None):

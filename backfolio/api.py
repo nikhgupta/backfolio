@@ -22,7 +22,7 @@ from .reporter import (
 
 
 def ccxt_backtest(strat, start_time=None, end_time=None,
-                  timeframe='1h', exchange='bittrex',
+                  timeframe='1h', exchange='bittrex', resample=None,
                   refresh=False, slippage=True, run=True,
                   balance={"BTC": 1}, initial_capital=None, commission=0.25,
                   benchmarks=False, debug=True, doprint=True, plots=True,
@@ -33,7 +33,7 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
     pf.refresh_history = refresh
 
     pf.commission = commission
-    pf.datacenter = CryptoDC(exchange, timeframe)
+    pf.datacenter = CryptoDC(exchange, timeframe, resample=resample)
     pf.portfolio = BasePortfolio()
     pf.broker = SimulatedBroker()
     pf.account = SimulatedAccount(
@@ -74,7 +74,7 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
 
 
 def binance_backtest(*args, **kwargs):
-    defaults = {"commission": (0.05, 'BNB'),
+    defaults = {"commission": (0.075, 'BNB'),
                 "balance": {"BTC": 1, "BNB": 20},
                 "exchange": 'binance'}
     kwargs = {**defaults, **kwargs}

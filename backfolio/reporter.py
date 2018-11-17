@@ -236,7 +236,9 @@ class OrdersReporter(AbstractReporter):
         wins = cog[cog.total_profits > 0]
         lost = cog[cog.total_profits < 0]
         wr = len(wins)/len(cog)*100
-        pf = wins.total_profits.sum()/abs(lost.total_profits.sum())
+        lost_money = abs(lost.total_profits.sum())
+        won_money = wins.total_profits.sum()
+        pf = won_money/lost_money if lost_money > 0 else np.nan
         gog = og.groupby('asset').sum()
         gog['buy_price'] = gog['buy_cost']/gog['buy_quantity']
         gog['sell_price'] = gog['sell_cost']/gog['sell_quantity']

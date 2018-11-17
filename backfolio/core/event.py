@@ -58,8 +58,8 @@ class OrderCreatedEvent(BaseEvent):
     """
     Event emitted when a new order is created by the broker for an asset.
     """
-    def __init__(self, order):
-        super().__init__(order, priority=4)
+    def __init__(self, order, priority=4):
+        super().__init__(order, priority=priority)
         self.pending = False
 
 
@@ -79,7 +79,7 @@ class OrderRejectedEvent(OrderCreatedEvent):
     """
 
     def __init__(self, order, reason=None):
-        super().__init__(order)
+        super().__init__(order, priority=5)
         self.reason = reason
 
     @property

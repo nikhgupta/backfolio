@@ -5,11 +5,14 @@ an exchange/datacenter.
 
 import glob
 import ccxt
-import quandl
 import pyprind
 import requests
 import numpy as np
 import pandas as pd
+try:
+    import quandl
+except ModuleNotFoundError:
+    pass
 
 from zipfile import ZipFile
 from abc import ABCMeta, abstractmethod
