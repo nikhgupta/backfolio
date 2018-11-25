@@ -20,7 +20,7 @@ class AbstractNotifier:
         raise NotImplementedError("Notifier must implement `notify()`")
 
     def formatted_notify(self, message, now=None):
-        if now is None:
+        if now is None or self.context.live_trading():
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         message = "%12s - [%s]: %s" % (self.name, now, message)
         self.notify(message, now)

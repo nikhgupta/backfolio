@@ -141,7 +141,7 @@ def quick_bt(history, lookup, top=None, bottom=None, ft=None, tt=None,
     pidx, bar, war = None, {}, {}
     for idx, row in ret.iterrows():
         if pidx:
-            scorers = lookup.loc[pidx].dropna().sort_values(ascending=0).index
+            scorers = lookup.loc[pidx].dropna().sort_values(ascending=False).index
             bar[idx] = math.fsum([fast_xs(ret, idx)[asset] - 2*fee/100
                                   for asset in scorers[:top]])
             war[idx] = math.fsum([fast_xs(ret, idx)[asset] - 2*fee/100

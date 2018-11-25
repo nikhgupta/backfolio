@@ -185,10 +185,11 @@ class CashAndEquityReporter(AbstractReporter):
         if not self.each_tick:
             return
         data = self.portfolio.timeline[-1]
+        free = self.account.cash
         base = self.context.base_currency
         comm = self.context.commission_asset
-        message = "Equity: %.8f %s, Cash: %.8f %s"
-        message %= (data['equity'], base, data['cash'], base)
+        message = "Equity: %.8f %s, Cash: %.8f %s, Free: %.8f %s"
+        message %= (data['equity'], base, data['cash'], base, data['free'], base)
         if 'commission_paid' in data and not np.isnan(data['commission_paid']):
             message += ", CommPaid: %.8f %s"
             message %= (data['commission_paid'], comm)
