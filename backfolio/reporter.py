@@ -189,7 +189,7 @@ class CashAndEquityReporter(AbstractReporter):
         base = self.context.base_currency
         comm = self.context.commission_asset
         message = "Equity: %.8f %s, Cash: %.8f %s, Free: %.8f %s"
-        message %= (data['equity'], base, data['cash'], base, data['free'], base)
+        message %= (data['equity'], base, data['cash'], base, free, base)
         if 'commission_paid' in data and not np.isnan(data['commission_paid']):
             message += ", CommPaid: %.8f %s"
             message %= (data['commission_paid'], comm)
