@@ -261,6 +261,11 @@ class SimulatedBroker(AbstractBroker):
             required = required - advice.position * price
             price = price * (1 + self.get_slippage(advice, required))
             quantity = required/price
+        elif advice.quantity_type == 'REL_PERCENT':
+            # Cost remains fixed here. Price/Quantity can be varied.
+            required = advice.quantity/100*self.account.equity
+            price = price * (1 + self.get_slippage(advice, required))
+            quantity = required/price
 
         # lets, calculate the cost of this order
         cost = quantity * price
