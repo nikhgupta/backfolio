@@ -866,7 +866,8 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                 self.account.total[base] += asset_equity
                 asset_equity = self.account.total[asset] = 0
                 self.account.locked[asset] = self.account.free[asset] = 0
-                print("========= IGNORING COIN: %s ============" % asset)
+                if self.context.debug:
+                    print("========= IGNORING COIN: %s ============" % asset)
                 continue
 
             if (symbol in rejected.index and
