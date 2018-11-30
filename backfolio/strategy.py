@@ -874,7 +874,7 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                     symbol in data.index and symbol not in selected.index):
                 asset_data = fast_xs(data, symbol)
                 #if symbol == "SKY/BTC": embed()
-                if asset_equity > asset_data['required_equity']/100:
+                if asset_equity > asset_data['required_equity']/100 and asset_equity > 1e-3:
                     n, prices = 0, self.selling_prices(symbol, asset_data)
                     N = asset_equity/self.account.equity*100
                     if asset == self.context.commission_asset:
@@ -892,7 +892,7 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
             if symbol not in selected.index:
                 continue
             asset_data = fast_xs(data, symbol)
-            if asset_equity > asset_data['required_equity']:
+            if asset_equity > asset_data['required_equity'] and asset_equity > 1e-3:
                 prices = self.selling_prices(symbol, asset_data)
                 n = asset_data['weight'] * 100
                 N = asset_equity/self.account.equity*100
