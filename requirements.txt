@@ -1,0 +1,15 @@
+pandas
+numpy
+matplotlib
+pyprind
+Click
+jupyter
+cookiecutter
+empyrical
+tabulate
+ccxt
+requests
+pytest
+scipy
+scikit-learn
+TA-Lib
