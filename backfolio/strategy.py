@@ -41,7 +41,7 @@ class BaseStrategy(object):
 
     def transform_history(self, panel):
         if self.symbols:
-            panel = panel[self.symbols]
+            panel = panel[self.symbols].dropna(how='any')
         return panel
 
     def reset(self, context):
@@ -446,7 +446,10 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         If `max_cost` is specified, order cost is, further, limited by that
         amount.
         """
-        max_flow = fast_xs(self.data, symbol)['flow']*self.flow_multiplier/100
+        if symbol in self.data.index:
+            max_flow = fast_xs(self.data, symbol)['flow']*self.flow_multiplier/100
+        else:
+            max_flow = 1
         if self.max_order_size:
             max_flow = max(max_flow, self.max_order_size)
         max_cost = min(max_cost, max_flow) if max_cost else max_flow
@@ -565,7 +568,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         """
         if 'score' in data.columns:
             return data.sort_values(
-                by=['score', 'volume', 'close'], ascending=[0, 0, 1])
+                by=['score', 'volume', 'close'], ascending=[False, False, True])
         else:
             return data
 
@@ -670,7 +673,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         weights = data['score'].copy()
         weights[weights < 0] = 0
         if self.assets:
-            weights = weights.sort_values(ascending=0)
+            weights = weights.sort_values(ascending=False)
             weights.iloc[self.assets:] = 0
         return weights
 
