@@ -137,6 +137,11 @@ class SimulatedAccount(AbstractAccount):
         super().__init__(*args, **kwargs)
         self.initial_balance = initial_balance
 
+    def display_stats(self):
+        print("Free:   %s" % {k: v for k,v in self.free.items()   if v > 0})
+        print("Total:  %s" % {k: v for k,v in self.total.items()  if v > 0})
+        print("Locked: %s" % {k: v for k,v in self.locked.items() if v > 0})
+
     def _update_balance(self):
         if self.free:
             return (self.free, self.locked, self.total)
@@ -161,7 +166,7 @@ class SimulatedAccount(AbstractAccount):
         if order.quantity > 0:
             self.free[order.base] -= order.order_cost
             self.locked[order.base] += order.order_cost
-        else:
+        elif order.quantity < 0:
             self.free[order.asset] -= abs(order.quantity)
             self.locked[order.asset] += abs(order.quantity)
 
@@ -176,7 +181,7 @@ class SimulatedAccount(AbstractAccount):
             self.locked[order.base] -= order.order_cost
             self.free[order.asset] += order.quantity
             self.total[order.asset] += order.quantity
-        else:
+        elif order.quantity < 0:
             self.total[order.asset] -= abs(order.quantity)
             self.locked[order.asset] -= abs(order.quantity)
             self.free[order.base] += abs(order.order_cost)
@@ -187,7 +192,7 @@ class SimulatedAccount(AbstractAccount):
         if order.quantity > 0:
             self.free[order.base] += order.order_cost
             self.locked[order.base] -= order.order_cost
-        else:
+        elif order.quantity < 0:
             self.free[order.asset] += abs(order.quantity)
             self.locked[order.asset] -= abs(order.quantity)
 

@@ -216,7 +216,8 @@ class SimulatedBroker(AbstractBroker):
     # OPTIMIZE: takes a really long time ~10%
     def cancel_pending_orders(self):
         for order in self.portfolio.open_orders:
-            order.mark_cancelled(self)
+            if not order.is_cancelled:
+                order.mark_cancelled(self)
 
     # TODO: instead allow passing a % which will be added to opening price
     # for limit orders
