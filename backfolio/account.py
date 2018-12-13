@@ -120,6 +120,9 @@ class AbstractAccount(object):
     def update_after_order_unfilled(self, event):
         pass
 
+    def remove_asset_from_calc(asset, base, asset_equity):
+        pass
+
     @abstractmethod
     def _update_balance(self):
         """ Refresh/update account balance """
@@ -132,10 +135,25 @@ class AbstractAccount(object):
                                   `update_after_order()`")
 
 
+import math
 class SimulatedAccount(AbstractAccount):
     def __init__(self, *args, initial_balance={}, **kwargs):
         super().__init__(*args, **kwargs)
         self.initial_balance = initial_balance
+
+    def keep_check(self):
+        wrong = False
+        for k, v in self.free.items():
+            if v < -1e-8 or self.locked[k] < -1e-8 or self.total[k] < -1e-8:
+                print("Found negative entry for %s" % k)
+                wrong = True
+            added = round(v + self.locked[k], 8)
+            actual = round(self.total[k], 8)
+            if abs(added - actual) > 1e-8:
+                print("Found balance mismatch for %s: %s vs %s" % (k, added, actual))
+                wrong = True
+        if wrong:
+            from IPython import embed; embed()
 
     def display_stats(self):
         print("Free:   %s" % {k: v for k,v in self.free.items()   if v > 0})
@@ -198,6 +216,11 @@ class SimulatedAccount(AbstractAccount):
 
     def update_after_order_rejected(self, event):
         self.update_after_order_unfilled(event)
+
+    def remove_asset_from_calc(asset, base, asset_equity):
+        self.account.free[base] += asset_equity
+        self.account.total[base] += asset_equity
+        self.account.total[asset] = self.account.locked[asset] = self.account.free[asset] = 0
 
 
 class CcxtExchangeAccount(AbstractAccount):

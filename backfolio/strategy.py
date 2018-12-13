@@ -555,7 +555,6 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 data.loc[:, 'weight'] = weights
 
         data = data.dropna(how='all')
-        data = data[data['volume'] > 0]
         return data
 
     def sorted_data(self, data):
@@ -724,11 +723,12 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             if (asset in self.account.total and
                 self.account.total[asset] > 1e-8 and
                 symbol not in data.index and asset != base):
-                self.account.total[base] += asset_equity
-                asset_equity = self.account.total[asset] = 0
-                self.account.locked[asset] = self.account.free[asset] = 0
-                continue
+                self.account.remove_asset_from_calc(asset, base, asset_equity)
+                asset_equity = 0
+                if self.context.debug:
+                    print("========= IGNORING COIN: %s ============" % asset)
                 # from IPython import embed; embed()
+                continue
 
             if (symbol in rejected.index and
                     symbol in data.index and symbol not in selected.index):
@@ -863,12 +863,10 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
             symbol = self._symbols[asset]
             base = self.context.base_currency
             if (asset in self.account.total and
-                self.account.total[asset] > 1e-8 and
-                symbol not in data.index and asset != base and
-                self.context.backtesting()):
-                self.account.total[base] += asset_equity
-                asset_equity = self.account.total[asset] = 0
-                self.account.locked[asset] = self.account.free[asset] = 0
+                    self.account.total[asset] > 1e-8 and
+                    symbol not in data.index and asset != base):
+                self.account.remove_asset_from_calc(asset, base, asset_equity)
+                asset_equity = 0
                 if self.context.debug:
                     print("========= IGNORING COIN: %s ============" % asset)
                 continue

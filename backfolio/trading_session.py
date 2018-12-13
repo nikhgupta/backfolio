@@ -457,7 +457,8 @@ class TradingSession:
             self.account.update_after_order_rejected(event)
             self.portfolio.record_rejected_order(event)
             self._run_hook('after_order_rejected_done', event)
-        self._run_hook('after_any_event_done')
+        self._run_hook('after_any_event_done', event)
+        self.account.keep_check()
         self.events.task_done()
 
 
