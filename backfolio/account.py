@@ -120,9 +120,6 @@ class AbstractAccount(object):
     def update_after_order_unfilled(self, event):
         pass
 
-    def remove_asset_from_calc(asset, base, asset_equity):
-        pass
-
     @abstractmethod
     def _update_balance(self):
         """ Refresh/update account balance """
@@ -216,11 +213,6 @@ class SimulatedAccount(AbstractAccount):
 
     def update_after_order_rejected(self, event):
         self.update_after_order_unfilled(event)
-
-    def remove_asset_from_calc(asset, base, asset_equity):
-        self.account.free[base] += asset_equity
-        self.account.total[base] += asset_equity
-        self.account.total[asset] = self.account.locked[asset] = self.account.free[asset] = 0
 
 
 class CcxtExchangeAccount(AbstractAccount):

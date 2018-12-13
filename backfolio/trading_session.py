@@ -461,6 +461,38 @@ class TradingSession:
         self.account.keep_check()
         self.events.task_done()
 
+    # NOTE: This is hacky, and only required to ensure delisted coins are
+    # properly converted back to base asset. Try to refrain from using this as
+    # much as possible.
+    def delist_asset(self, asset, asset_equity):
+        counter = 0
+        while True:
+            counter += 1
+            # remove asset from open orders directly
+            for order in self.portfolio.open_orders:
+                if order.asset == asset:
+                    self.portfolio.open_orders.remove(order)
+            check1 = asset not in [x.asset for x in self.portfolio.open_orders]
+
+            # remove asset from queue directly
+            for item in self.events.queue:
+                if item[-1].item.asset == asset:
+                    self.events.queue.remove(item)
+            check2 = asset not in [x[-1].item.asset for x in self.events.queue]
+
+            if check1 and check2:
+                break
+
+            if counter > 5:
+                print("Could not remove %s asset from open orders or event queue!" % asset)
+                from IPython import embed; embed()
+
+        self.account.free[self.base_currency]  += asset_equity
+        self.account.total[self.base_currency] += asset_equity
+        self.account.total[asset] = self.account.locked[asset] = self.account.free[asset] = 0
+        if self.debug:
+            print("========= DELISTED COIN: %s ============" % asset)
+
 
 class BacktestSession(TradingSession):
     def __init__(self, *args, **kwargs):

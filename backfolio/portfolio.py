@@ -97,10 +97,15 @@ class BasePortfolio(object):
         return equity
 
     @property
-    def equity_per_asset(self):
-        equity = self.asset_equity[-1].copy()
-        equity.pop("time")
-        # equity.pop("BTC")
+    def equity_per_asset(self, n=1):
+        if self._converted_to_pandas:
+            equity = self.asset_equity.iloc[-n].to_dict()
+        elif len(self.asset_equity):
+            equity = self.asset_equity[-n].copy()
+        else:
+            equity = {}
+        if 'time' in equity:
+            equity.pop("time")
         return equity
 
     # TODO: When an asset does not trade wrt base currency, but has tick data
@@ -141,6 +146,11 @@ class BasePortfolio(object):
             elif symbol in data.index:
                 price = fast_xs(data.fillna(0), symbol)[field]
                 resp['asset_equity'][asset] = quantity * price
+            elif self.is_holding_delisted_asset(asset, symbol) and len(self.asset_equity):
+                print("delisted asset: %s %0.8f" % (asset, self.asset_equity[-1][asset]))
+                self.context.delist_asset(asset, self.equity_per_asset[asset])
+            elif len(self.asset_equity):
+                resp['asset_equity'][asset] = self.equity_per_asset[asset]
             else:
                 resp['asset_equity'][asset] = 0
 
@@ -151,6 +161,16 @@ class BasePortfolio(object):
 
     def last_positions_and_equities_at_tick_close(self):
         return self.last_positions_and_equities_at_tick_open(field='close')
+
+    def is_holding_delisted_asset(self, asset, symbol=None):
+        if (asset not in self.account.total or self.account.total[asset] < 1e-8 or
+                asset == self.context.base_currency):
+            return False
+        if not symbol:
+            symbol = self.datacenter.assets_to_symbol(asset)
+        history = self.datacenter.history[symbol]
+        history = history[self.context.current_time.strftime("%Y-%m-%d %H:%M"):]
+        return not history.empty
 
     def record_advice_from_strategy(self, advice_event):
         self.advice_history.append(advice_event.item)
