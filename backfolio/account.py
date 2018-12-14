@@ -142,10 +142,17 @@ class SimulatedAccount(AbstractAccount):
         for asset in list(assets):
             actual = self.free[asset] + self.locked[asset]
             expected = self.total[asset]
-            if abs(actual - expected) > 1e-8:
-                print("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
-                from IPython import embed; embed()
-                return False
+            if abs(actual - expected) > 1e-8 and abs(actual/expected - 1) > 1e-6:
+                symbol = self.datacenter.assets_to_symbol(asset)
+                price = self.datacenter._data_seen[-1].data['history']
+                if symbol in price.index:
+                    price = price.loc[symbol, 'close']
+                else:
+                    price = None
+                if not price or price*abs(actual - expected) > 1e-8:
+                    print("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
+                    from IPython import embed; embed()
+                    return False
 
     def display_stats(self):
         print("Free:   %s" % {k: v for k,v in self.free.items()   if v > 0})
