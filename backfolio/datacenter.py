@@ -3,8 +3,10 @@ Various implementations for obtaining historical as well as live data from
 an exchange/datacenter.
 """
 
+import os
 import glob
 import ccxt
+import json
 import pyprind
 import requests
 import numpy as np
@@ -426,6 +428,95 @@ class CryptocurrencyDatacenter(BaseDatacenter):
             last_timestamp = int((cdf.index[0] - pd.to_timedelta(
                  len(data) * self.timeframe)).timestamp())*1000
 
+        return self._cleanup_and_save_symbol_data(symbol, cdf)
+
+
+class CryptocompareDatacenter(BaseDatacenter):
+    def __init__(self, exchange, *args,
+                 to_sym='BTC', limit=10000, params={}, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.to_sym = to_sym
+        self.exchange = getattr(ccxt, exchange)(params)
+        self.history_limit = limit
+        self._market_data = {}
+
+    @property
+    def name(self):
+        return "crypto/%s/%s" % (self.exchange.name, self.timeframe)
+
+    def load_markets(self):
+        if self.refresh_history:
+            self._market_data = self.exchange.load_markets(True)
+        elif self.history is not None:
+            self._market_data = dict(
+                [(k, {}) for k in self.history.axes[0]])
+        else:
+            raise ValueError("You must run with refresh=True to load markets")
+        return self._market_data
+
+    def all_symbols(self):
+        """ Fetch all symbols supported by this exchange as a list """
+        if self._selected_symbols:
+            return self._selected_symbols
+
+        self.load_markets()
+
+        if self.to_sym is not None and self.to_sym.strip():
+            self.markets = [key for key, _v in self._market_data.items()
+                            if key[-len(self.to_sym):] == self.to_sym]
+        else:
+            if not self._market_data:
+                self.load_markets()
+            self.markets = list(self._market_data.keys())
+        return self.markets
+
+    def symbol_to_assets(self, symbol):
+        return symbol.split("/")
+
+    def assets_to_symbol(self, fsym, tsym=None):
+        if tsym is None:
+            tsym = self.context.base_currency
+        return "%s/%s" % (fsym, tsym)
+
+    def refresh_history_for_symbol(self, symbol, cdf=None):
+        """ Refresh history for a given asset from exchange """
+        plen = 0
+        last_timestamp = None
+        col_list = ['time', 'open', 'high', 'low', 'close', 'volume']
+        if cdf is None:
+            cdf = pd.DataFrame(columns=col_list).set_index('time')
+
+        while True:
+            fsym, tsym = self.symbol_to_assets(symbol)
+            endpoint = 'histohour' if self.timeframe == '1h' else 'histoday'
+            url = "https://min-api.cryptocompare.com/data/%s?fsym=%s&tsym=%s&limit=2000&e=%s"
+            url = url % (endpoint, fsym, tsym, self.exchange.name)
+            if last_timestamp:
+                url += "&toTs=%s" % last_timestamp
+            url += "&api_key=%s" % os.environ['CRYPTOCOMPARE_API_KEY']
+            data = requests.get(url)
+            data = json.loads(data.text)
+            if data['Response'] == 'Error':
+                break
+            data = data["Data"]
+            df = pd.DataFrame.from_records(data)
+            df['volume'] = df['volumefrom']
+            df = df.drop(['volumefrom', 'volumeto'], axis=1)
+            df['time'] = pd.to_datetime(df['time']*1000, unit='ms')
+            df = df.sort_values(by='time', ascending=1).set_index('time')
+            cdf = cdf.append(df)
+            cdf = cdf[~cdf.index.duplicated(keep='last')]
+            cdf = cdf.sort_index(ascending=1)
+            if (df.empty or len(cdf) == plen or self.history_limit is None or
+                    len(cdf) >= self.history_limit or df.volume.sum() == 0 or
+                    (self.context and not self.context.backtesting())):
+                break
+
+            plen = len(cdf)
+            last_timestamp = int(cdf.index[0].timestamp())
+
+        if cdf.empty:
+            return cdf
         return self._cleanup_and_save_symbol_data(symbol, cdf)
 
 
