@@ -435,9 +435,10 @@ class TradingSession:
             self._run_hook('after_order_created_done', event)
 
         elif type(event) == OrderPendingEvent:
-            self._run_hook('after_order_pending', event)
-            self.broker.execute_order_after_creation(event)
-            self._run_hook('after_order_pending_done', event)
+            if event.item.is_open:
+                self._run_hook('after_order_pending', event)
+                self.broker.execute_order_after_creation(event)
+                self._run_hook('after_order_pending_done', event)
 
         elif type(event) == OrderFilledEvent:
             self._run_hook('after_order_filled', event)
@@ -458,7 +459,7 @@ class TradingSession:
             self.portfolio.record_rejected_order(event)
             self._run_hook('after_order_rejected_done', event)
         self._run_hook('after_any_event_done', event)
-        self.account.keep_check()
+        self.account.assert_balance_matched(*self.account.free.keys())
         self.events.task_done()
 
     # NOTE: This is hacky, and only required to ensure delisted coins are
@@ -491,7 +492,7 @@ class TradingSession:
         self.account.total[self.base_currency] += asset_equity
         self.account.total[asset] = self.account.locked[asset] = self.account.free[asset] = 0
         if self.debug:
-            print("========= DELISTED COIN: %s ============" % asset)
+            print("========= DELISTED COIN: %s | LAST EQUITY: %0.8f ============" % (asset, asset_equity))
 
 
 class BacktestSession(TradingSession):

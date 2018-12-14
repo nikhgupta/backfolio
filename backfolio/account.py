@@ -138,19 +138,14 @@ class SimulatedAccount(AbstractAccount):
         super().__init__(*args, **kwargs)
         self.initial_balance = initial_balance
 
-    def keep_check(self):
-        wrong = False
-        for k, v in self.free.items():
-            if v < -1e-8 or self.locked[k] < -1e-8 or self.total[k] < -1e-8:
-                print("Found negative entry for %s" % k)
-                wrong = True
-            added = round(v + self.locked[k], 8)
-            actual = round(self.total[k], 8)
-            if abs(added - actual) > 1e-8:
-                print("Found balance mismatch for %s: %s vs %s" % (k, added, actual))
-                wrong = True
-        if wrong:
-            from IPython import embed; embed()
+    def assert_balance_matched(self, *assets):
+        for asset in list(assets):
+            actual = self.free[asset] + self.locked[asset]
+            expected = self.total[asset]
+            if abs(actual - expected) > 1e-8:
+                print("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
+                from IPython import embed; embed()
+                return False
 
     def display_stats(self):
         print("Free:   %s" % {k: v for k,v in self.free.items()   if v > 0})

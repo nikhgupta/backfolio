@@ -96,7 +96,7 @@ def detect_with_index(items, pred):
     return next((i for i in enumerate(items) if pred(i)), None)
 
 
-def generate_id(name, inst, length=8):
+def generate_id(name, inst, length=16):
     str = None
     set = string.ascii_uppercase + string.digits
     if not hasattr(inst, 'ids'):

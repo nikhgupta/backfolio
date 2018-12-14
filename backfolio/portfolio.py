@@ -39,6 +39,7 @@ class BasePortfolio(object):
         self.unfilled_orders = []
         self._converted_to_pandas = False
         self.last_tick = None
+        self.delisted_assets = []
 
         self.session_fields = ['timeline', 'asset_equity', 'advice_history',
                                'orders', 'filled_orders', 'rejected_orders',
@@ -147,10 +148,16 @@ class BasePortfolio(object):
                 price = fast_xs(data.fillna(0), symbol)[field]
                 resp['asset_equity'][asset] = quantity * price
             elif self.is_holding_delisted_asset(asset, symbol) and len(self.asset_equity):
-                print("delisted asset: %s %0.8f" % (asset, self.asset_equity[-1][asset]))
-                self.context.delist_asset(asset, self.equity_per_asset[asset])
-            elif len(self.asset_equity):
+                last_equity = self.equity_per_asset[asset]
+                self.context.delist_asset(asset, last_equity)
+                resp['asset_equity'][asset] = last_equity
+            elif len(self.asset_equity) and asset in self.delisted_assets:
+                resp['asset_equity'][asset] = 0
+            elif len(self.asset_equity) and asset in self.equity_per_asset:
                 resp['asset_equity'][asset] = self.equity_per_asset[asset]
+            elif len(self.asset_equity):
+                print("!!!! NOT SURE WHAT TO DO - ASSET's VALUE COULD NOT BE DETERMINED (in portfolio.py)")
+                from IPython import embed; embed()
             else:
                 resp['asset_equity'][asset] = 0
 
@@ -170,7 +177,10 @@ class BasePortfolio(object):
             symbol = self.datacenter.assets_to_symbol(asset)
         history = self.datacenter.history[symbol]
         history = history[self.context.current_time.strftime("%Y-%m-%d %H:%M"):]
-        return not history.empty
+        without_history = history.dropna(how='all').empty
+        if without_history:
+            self.delisted_assets.append(asset)
+        return without_history
 
     def record_advice_from_strategy(self, advice_event):
         self.advice_history.append(advice_event.item)

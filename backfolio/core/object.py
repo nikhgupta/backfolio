@@ -244,7 +244,7 @@ class Order:
 
     @property
     def is_cancelled(self):
-        return self.status == 'cancelled'
+        return self.status == 'cancelled' or self.status == 'rejected'
 
     @property
     def is_partially_filled(self):
