@@ -265,6 +265,9 @@ class BaseDatacenter(object):
         return df
 
     def _sanitize_ohlcv(self, df):
+        if df.empty:
+            return df
+
         df = self._sanitize_index(df)
         if self.realign:
             freq = self.timeframe.replace('m', 'T')
