@@ -11,10 +11,17 @@ import pyprind
 import requests
 import numpy as np
 import pandas as pd
+
 try:
     import quandl
 except ModuleNotFoundError:
-    pass
+    print("QuandlDatacenter will not work. Library missing!")
+
+try:
+    from nsetools import Nse
+    from yahoofinancials import YahooFinancials
+except:
+    print("NseDatacenter will not work. Library missing!")
 
 from zipfile import ZipFile
 from abc import ABCMeta, abstractmethod
@@ -47,13 +54,14 @@ class BaseDatacenter(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, timeframe='1d', fill=True, resample=None):
+    def __init__(self, timeframe='1d', fill=True, realign=True, resample=None):
         self._name = 'base_datacenter'
         self._selected_symbols = []
         self.timeframe = timeframe
         self.session_fields = []
         self.fill = fill
         self.resample = resample
+        self.realign = realign
 
     def reset(self, context=None, root_dir=None):
         """ Routine to run when trading session is resetted. """
@@ -259,9 +267,10 @@ class BaseDatacenter(object):
     def _sanitize_ohlcv(self, df):
         df = self._sanitize_index(df)
         df['volume'] = np.where(df['volume'] > MAXINT, MAXINT, df['volume'])
-        if self.fill:
+        if self.realign:
             freq = self.timeframe.replace('m', 'T')
             df = df.groupby(pd.Grouper(freq=freq)).last()
+        if self.fill:
             df['volume'] = df['volume'].fillna(0.0)
             df['close'] = df['close'].fillna(method='pad')
             df['open'] = df['open'].fillna(df['close'])
@@ -583,3 +592,73 @@ class QuandlDatacenter(BaseDatacenter):
                                   "Adj. Volume": "volume"})
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
+
+
+
+
+class NseDatacenter(BaseDatacenter):
+    def __init__(self, *args, params={}, **kwargs):
+        defaults = {"realign": False, "fill": True}
+        super().__init__(*args, **{**defaults, **kwargs})
+        self.exchange = Nse()
+        self.to_sym='INR'
+        self._market_data = {}
+
+    @property
+    def name(self):
+        return "stocks/nse/1d"
+
+    def load_markets(self):
+        if self.refresh_history:
+            stocks = self.exchange.get_stock_codes(cached=False)
+            stocks = set(stocks) - set(['SYMBOL'])
+            self._market_data = {self.assets_to_symbol(k): {} for k in stocks}
+        elif self.history is not None:
+            self._market_data = dict(
+                [(k, {}) for k in self.history.axes[0]])
+        elif self.history is not None:
+            raise ValueError("You must run with refresh=True to load markets")
+        return self._market_data
+
+    def all_symbols(self):
+        """ Fetch all symbols supported by this exchange as a list """
+        if self._selected_symbols:
+            return self._selected_symbols
+
+        self.markets = [key for key, val in self.load_markets().items()]
+        return self.markets
+
+    def symbol_to_assets(self, symbol):
+        return symbol.split("/")
+
+    def assets_to_symbol(self, fsym):
+        return "%s/%s" % (fsym, self.to_sym)
+
+    def refresh_history_for_symbol(self, symbol, cdf=None, exact=False):
+        """ Refresh history for a given asset from exchange """
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        fsym, tsym = self.symbol_to_assets(symbol)
+        stock = fsym if exact else "%s.NS" % fsym
+
+        df = YahooFinancials(stock)
+        df = df.get_historical_price_data("2000-01-01", today, "daily")
+        df = pd.DataFrame.from_records(df[stock]['prices'])
+
+        if df.empty:
+            return df
+        df = df.drop(['date'], axis=1)
+        df = df.rename(columns={"dividend_amount": "dividend", "split_coefficient": "split",
+                        "close": "realclose", "adjclose": "close", "formatted_date": "time"})
+
+        if 'time' not in df.columns:
+            from IPython import embed; embed()
+
+        df['time'] = pd.to_datetime(df['time'])
+        for col in df.columns:
+            df.loc[df['volume']==0, col] = np.nan
+        df = df.sort_values(by='time', ascending=1).set_index('time')
+
+        if df.empty:
+            return df
+
+        return self._cleanup_and_save_symbol_data(symbol, df)

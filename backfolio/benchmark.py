@@ -197,3 +197,15 @@ class CryptoMarketCapAsBenchmark(BaseBenchmark):
 
         df['returns'] = df['price']/df['price'].shift(1) - 1
         return df
+
+
+class NseIndexAsBenchmark(BaseBenchmark):
+    def __init__(self, name, cache_name=None):
+        self.name = "Index/NSE/%s" % name
+        self.symbol = "%s/INR" % name
+        if not cache_name:
+            cache_name = name
+        super().__init__(name, cache_name)
+
+    def _returns_data(self):
+        return self.datacenter.refresh_history_for_symbol(self.symbol, exact=True)

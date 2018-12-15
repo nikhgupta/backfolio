@@ -9,10 +9,11 @@ import matplotlib.pyplot as plt
 from .portfolio import BasePortfolio
 from .account import SimulatedAccount, CcxtExchangeAccount
 from .trading_session import BacktestSession, LiveTradingSession
+from .datacenter import *
 from .datacenter import CryptocurrencyDatacenter as CryptoDC
 from .broker import SimulatedBroker, CcxtExchangeBroker
 from .notifier import FileLogger, SlackNotifier
-from .benchmark import SymbolAsBenchmark, CryptoMarketCapAsBenchmark
+from .benchmark import *
 from .core.utils import fast_xs
 from .reporter import (
     BaseReporter,
