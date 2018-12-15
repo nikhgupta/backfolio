@@ -634,8 +634,9 @@ class NseDatacenter(BaseDatacenter):
     def symbol_to_assets(self, symbol):
         return symbol.split("/")
 
-    def assets_to_symbol(self, fsym):
-        return "%s/%s" % (fsym, self.to_sym)
+    def assets_to_symbol(self, fsym, tsym=None):
+        tsym = tsym if tsym else self.to_sym
+        return "%s/%s" % (fsym, tsym)
 
     def refresh_history_for_symbol(self, symbol, cdf=None, exact=False):
         """ Refresh history for a given asset from exchange """

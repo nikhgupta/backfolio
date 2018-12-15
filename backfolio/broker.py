@@ -145,7 +145,10 @@ class SimulatedBroker(AbstractBroker):
             return
 
         if not exchange:
-            exchange = self.datacenter.exchange.name
+            if hasattr(self.datacenter.exchange, "name"):
+                exchange = self.datacenter.exchange.name
+            else:
+                exchange = self.datacenter.name
 
         quantity, cost, price = self.calculate_order_shares_and_cost(advice)
         if abs(quantity) < 1e-8 or price < 1e-8:  # empty order
