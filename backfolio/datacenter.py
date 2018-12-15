@@ -266,7 +266,6 @@ class BaseDatacenter(object):
 
     def _sanitize_ohlcv(self, df):
         df = self._sanitize_index(df)
-        df['volume'] = np.where(df['volume'] > MAXINT, MAXINT, df['volume'])
         if self.realign:
             freq = self.timeframe.replace('m', 'T')
             df = df.groupby(pd.Grouper(freq=freq)).last()
@@ -276,8 +275,11 @@ class BaseDatacenter(object):
             df['open'] = df['open'].fillna(df['close'])
             df['low'] = df['low'].fillna(df['close'])
             df['high'] = df['high'].fillna(df['close'])
+            if 'realclose' in df.columns:
+                df['realclose'] = df['realclose'].fillna(method='pad')
         df['dividend'] = 0
         df['split'] = 1
+        df['volume'] = np.where(df['volume'] > MAXINT, MAXINT, df['volume'])
         if self.resample:
             df = df.resample(self.resample).agg({
                 "open": 'first', 'high': 'max',
@@ -597,12 +599,13 @@ class QuandlDatacenter(BaseDatacenter):
 
 
 class NseDatacenter(BaseDatacenter):
-    def __init__(self, *args, params={}, **kwargs):
+    def __init__(self, *args, start="2000-01-01", params={}, **kwargs):
         defaults = {"realign": False, "fill": True}
         super().__init__(*args, **{**defaults, **kwargs})
         self.exchange = Nse()
         self.to_sym='INR'
         self._market_data = {}
+        self.start_date = start
 
     @property
     def name(self):
@@ -636,27 +639,28 @@ class NseDatacenter(BaseDatacenter):
 
     def refresh_history_for_symbol(self, symbol, cdf=None, exact=False):
         """ Refresh history for a given asset from exchange """
-        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
         fsym, tsym = self.symbol_to_assets(symbol)
         stock = fsym if exact else "%s.NS" % fsym
 
         df = YahooFinancials(stock)
-        df = df.get_historical_price_data("2000-01-01", today, "daily")
+        df = df.get_historical_price_data(self.start_date, today, "daily")
         df = pd.DataFrame.from_records(df[stock]['prices'])
 
         if df.empty:
             return df
+
         df = df.drop(['date'], axis=1)
         df = df.rename(columns={"dividend_amount": "dividend", "split_coefficient": "split",
                         "close": "realclose", "adjclose": "close", "formatted_date": "time"})
 
-        if 'time' not in df.columns:
+        if 'time' not in df.columns or 'volume' not in df.columns:
             from IPython import embed; embed()
 
         df['time'] = pd.to_datetime(df['time'])
-        for col in df.columns:
-            df.loc[df['volume']==0, col] = np.nan
         df = df.sort_values(by='time', ascending=1).set_index('time')
+        df = df[~np.isnat(df.index)]
+        df.loc[df['volume']==0, :] = np.nan
 
         if df.empty:
             return df
