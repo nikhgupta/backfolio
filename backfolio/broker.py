@@ -92,6 +92,7 @@ class AbstractBroker(object):
 
     @max_position_held.setter
     def max_position_held(self, equity=0):
+        print("added max position held at %s" % equity)
         self._max_position_held = equity
 
     @abstractmethod
@@ -179,7 +180,7 @@ class SimulatedBroker(AbstractBroker):
             order.mark_rejected(self, 'Symbol obsolete: %s' % symbol)
         elif cash < 1e-8:
             order.mark_rejected(self, 'Cash depleted')
-            # self.datacenter._continue_backtest = False
+            self.datacenter._continue_backtest = False
         elif cost >= cash and not pending:
             order.mark_rejected(
                 self,
@@ -279,8 +280,9 @@ class SimulatedBroker(AbstractBroker):
         # allocation is equal to max_position_held.
         if self.max_position_held:
             equity = (advice.position + quantity) * price
-            if equity > self.max_position_held:
-                quantity = self.max_position_held/price - advice.position
+            if abs(equity) > self.max_position_held:
+                quantity = (1 if cost > 0 else -1)*self.max_position_held/price
+                quantity -= advice.position
                 cost = quantity * price
 
         # ensure that the cost does not exceed max permittable order size
@@ -312,7 +314,8 @@ class SimulatedBroker(AbstractBroker):
             quantity = cost/price
 
         # ensure that when selling, we cannot sell more than free quantity
-        if quantity < 0 and abs(quantity) > self.account.free[advice.asset]:
+        if (quantity < 0 and not self.context.allow_shorting and
+                abs(quantity) > self.account.free[advice.asset]):
             quantity = -self.account.free[advice.asset]
             cost = quantity * price
 

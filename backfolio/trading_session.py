@@ -40,6 +40,8 @@ class TradingSession:
         self._start_time = None
         self._end_time = None
         self._current_time = None
+        self._allow_shorting = False
+
 
     @property
     def mode(self):
@@ -96,6 +98,14 @@ class TradingSession:
     @base_currency.setter
     def base_currency(self, value):
         self._base_currency = value
+
+    @property
+    def allow_shorting(self):
+        return self._allow_shorting
+
+    @allow_shorting.setter
+    def allow_shorting(self, value):
+        self._allow_shorting = value
 
     @property
     def commission(self):

@@ -279,6 +279,8 @@ class BaseDatacenter(object):
             df['high'] = df['high'].fillna(df['close'])
             if 'realclose' in df.columns:
                 df['realclose'] = df['realclose'].fillna(method='pad')
+            if 'realopen' in df.columns:
+                df['realopen'] = df['realopen'].fillna(method='pad')
         df['dividend'] = 0
         df['split'] = 1
         df['volume'] = np.where(df['volume'] > MAXINT, MAXINT, df['volume'])
@@ -368,6 +370,8 @@ class BaseDatacenter(object):
             df.loc[:, :, 'high'] = df[:, :, 'high'].fillna(df[:, :, 'close'])
             if 'realclose' in df.axes[2]:
                 df.loc[:, :, 'realclose'] = df[:, :,'realclose'].fillna(method='pad')
+            if 'realopen' in df.axes[2]:
+                df.loc[:, :, 'realopen'] = df[:, :,'realopen'].fillna(method='pad')
 
         self._all_data = df
 
@@ -664,8 +668,10 @@ class NseDatacenter(BaseDatacenter):
             return df
 
         df = df.drop(['date'], axis=1)
-        df = df.rename(columns={"dividend_amount": "dividend", "split_coefficient": "split",
-                        "close": "realclose", "adjclose": "close", "formatted_date": "time"})
+        df = df.rename(columns={"dividend_amount": "dividend",
+            "split_coefficient": "split", "close": "realclose", 
+            "adjclose": "close", "formatted_date": "time", "open": "realopen"})
+        df['open'] = df['close'].shift(1)
 
         if 'time' not in df.columns or 'volume' not in df.columns:
             from IPython import embed; embed()
