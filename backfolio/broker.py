@@ -327,7 +327,12 @@ class SimulatedBroker(AbstractBroker):
             comm_rate = self.get_commission_asset_rate(comm_sym)
         else:
             comm_asset = advice.base
-        comm_cost = self.context.commission/100. * abs(order_cost)
+
+        comm = self.context.commission
+        if callable(self.context.commission):
+            comm_cost, comm_asset = self.context.commission(advice, asset_quantity, order_cost)
+        else:
+            comm_cost = self.context.commission/100. * abs(order_cost)
         comm = comm_cost/comm_rate
         return (round(comm, 8), comm_asset, comm_rate, comm_cost)
 

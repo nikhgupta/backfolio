@@ -268,7 +268,6 @@ class BaseDatacenter(object):
         if df.empty:
             return df
 
-        df = self._sanitize_index(df)
         if self.realign:
             freq = self.timeframe.replace('m', 'T')
             df = df.groupby(pd.Grouper(freq=freq)).last()
@@ -292,7 +291,7 @@ class BaseDatacenter(object):
         return df
 
     def _cleanup_and_save_symbol_data(self, symbol, df):
-        df = self._sanitize_ohlcv(df)
+        df = self._sanitize_index(df)
         # save newly reloaded data to disk
         path = join(self.data_dir, "%s.csv" % symbol.replace("/", "_"))
         df.dropna().reset_index().to_csv(path, index=False)
@@ -360,7 +359,17 @@ class BaseDatacenter(object):
             if symbol not in self.markets:
                 continue
             self._all_data[sym] = self._sanitize_ohlcv(df)
-        self._all_data = pd.Panel(self._all_data)
+        df = pd.Panel(self._all_data)
+        if self.fill:
+            df.loc[:, :, 'volume'] = df[:, :, 'volume'].fillna(0.0)
+            df.loc[:, :, 'close'] = df[:, :, 'close'].fillna(method='pad')
+            df.loc[:, :, 'open'] = df[:, :, 'open'].fillna(df[:, :, 'close'])
+            df.loc[:, :, 'low'] = df[:, :, 'low'].fillna(df[:, :, 'close'])
+            df.loc[:, :, 'high'] = df[:, :, 'high'].fillna(df[:, :, 'close'])
+            if 'realclose' in df.axes[2]:
+                df.loc[:, :, 'realclose'] = df[:, :,'realclose'].fillna(method='pad')
+
+        self._all_data = df
 
 
 class CryptocurrencyDatacenter(BaseDatacenter):
