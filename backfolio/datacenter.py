@@ -378,11 +378,13 @@ class BaseDatacenter(object):
 
 class CryptocurrencyDatacenter(BaseDatacenter):
     def __init__(self, exchange, *args,
-                 to_sym='BTC', limit=10000, params={}, **kwargs):
+                 to_sym='BTC', limit=10000, per_page_limit=1000,
+                 params={}, **kwargs):
         super().__init__(*args, **kwargs)
         self.to_sym = to_sym
         self.exchange = getattr(ccxt, exchange)(params)
         self.history_limit = limit
+        self.per_page_limit = per_page_limit
         self._market_data = {}
 
         if not self.exchange.has['fetchOHLCV']:
@@ -430,7 +432,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
     def refresh_history_for_symbol(self, symbol, cdf=None):
         """ Refresh history for a given asset from exchange """
         plen = 0
-        last_timestamp = None
+        last_timestamp = int(datetime.now().timestamp()*1000) - 7*86400*1000
         col_list = ['time', 'open', 'high', 'low', 'close', 'volume']
         if cdf is None:
             cdf = pd.DataFrame(columns=col_list).set_index('time')
@@ -438,7 +440,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         while True:
             data = self.exchange.fetch_ohlcv(
                 symbol, timeframe=self.timeframe,
-                since=last_timestamp, limit=self.history_limit)
+                since=last_timestamp, limit=self.per_page_limit)
 
             df = pd.DataFrame(data, columns=col_list)
             df['time'] = pd.to_datetime(df['time'], unit='ms')
@@ -453,7 +455,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
 
             plen = len(cdf)
             last_timestamp = int((cdf.index[0] - pd.to_timedelta(
-                 len(data) * self.timeframe)).timestamp())*1000
+                 self.per_page_limit * self.timeframe)).timestamp())*1000
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
 
