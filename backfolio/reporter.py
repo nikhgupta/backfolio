@@ -224,6 +224,7 @@ class OrdersReporter(AbstractReporter):
         super().__init__(name='orders-reporter')
 
     def generate_summary_report(self):
+        print("Order Placement Summary")
         og = self.portfolio.order_groups
         if og.empty:
             return
@@ -231,9 +232,7 @@ class OrdersReporter(AbstractReporter):
         if cog.empty:
             return
 
-        print("Order Placement Summary")
-        cog['duration'] = (cog['ended_at'].astype(int)
-                           - cog['started_at'].astype(int))/3600/1e9
+        cog['duration'] = (cog['ended_at'].astype(int) - cog['started_at'].astype(int))/3600/1e9
         wins = cog[cog.total_profits > 0]
         lost = cog[cog.total_profits < 0]
         wr = len(wins)/len(cog)*100

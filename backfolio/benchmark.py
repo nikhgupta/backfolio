@@ -168,7 +168,11 @@ class CSVAsBenchmark(BaseBenchmark):
         super().__init__(name, file_name)
 
     def _returns_data(self):
-        pass
+        if not isfile(self._cache):
+            raise ValueError("No such benchmark: %s" % self._cache)
+        else:
+            return pd.read_csv(self._cache, index_col=0)
+
 
 
 class CryptoMarketCapAsBenchmark(BaseBenchmark):

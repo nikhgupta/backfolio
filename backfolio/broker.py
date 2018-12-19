@@ -92,7 +92,6 @@ class AbstractBroker(object):
 
     @max_position_held.setter
     def max_position_held(self, equity=0):
-        print("added max position held at %s" % equity)
         self._max_position_held = equity
 
     @abstractmethod
@@ -166,21 +165,24 @@ class SimulatedBroker(AbstractBroker):
         # FIXME: if order is pending recalculate order cost, price, etc.
         order = order_created_event.item
         pending = order_created_event.pending
-        cash, cost = self.account.cash, order.order_cost
         quantity, price = order.quantity, order.fill_price
         comm = order.commission
         comm_asset_balance = self.account.free[order.commission_asset]
         symbol = order.symbol(self)
         symbol_data = None
+        pbase = self.context.base_currency
+        base_rate = 1 if order.base == pbase else self.get_asset_rate(order.base)
+        cash, cost = self.account.free[order.base], order.order_cost
+
         if symbol in self.datacenter._current_real.index:
             symbol_data = fast_xs(self.datacenter._current_real, symbol)
 
         if (not symbol_data and order.is_open and
                 not self.datacenter._current_real.empty):
             order.mark_rejected(self, 'Symbol obsolete: %s' % symbol)
-        elif cash < 1e-8:
-            order.mark_rejected(self, 'Cash depleted')
-            self.datacenter._continue_backtest = False
+        # elif cash < 1e-8 and order.base == self.context.base_currency:
+        #     order.mark_rejected(self, 'Cash depleted')
+        #     # self.datacenter._continue_backtest = False
         elif cost >= cash and not pending:
             order.mark_rejected(
                 self,
@@ -198,13 +200,13 @@ class SimulatedBroker(AbstractBroker):
                 self,
                 'Insufficient Cash: %0.8f (comm) vs %0.8f (asset bal)' % (
                     comm, self.account.cash))
-        elif abs(cost) < self.min_order_size:
+        elif abs(cost)*base_rate < self.min_order_size:
             return
             # order.mark_rejected(self, track=False)
-        elif order.is_open and order.side == 'BUY' and order.quantity < 0:
+        elif order.is_open and order.is_buy and order.quantity < 0:
             order.mark_rejected(
                 self, 'Cannot sell asset for BUY order: %s' % order)
-        elif order.is_open and order.side == 'SELL' and order.quantity > 0:
+        elif order.is_open and order.is_sell and order.quantity > 0:
             order.mark_rejected(
                 self, 'Cannot buy asset for SELL order: %s' % order)
         elif order.is_open and order.order_type == 'LIMIT' and (
@@ -241,12 +243,15 @@ class SimulatedBroker(AbstractBroker):
             slippage *= -1 if direction < 0 else 1
         return slippage
 
-    def get_commission_asset_rate(self, comm_symbol):
-        return fast_xs(self.datacenter._current_real, comm_symbol)['open']
+    def get_asset_rate(self, asset):
+        symbol = self.datacenter.assets_to_symbol(asset, self.context.base_currency)
+        return fast_xs(self.datacenter._current_real, symbol)['open']
 
     def calculate_order_shares_and_cost(self, advice):
         # Get the specified LIMIT price or open price of next tick for MARKET
+        pbase = self.context.base_currency
         price = self.get_order_price(advice)
+        base_rate = 1 if advice.base == pbase else self.get_asset_rate(advice.base)
 
         # If we can not get price, or if quantity was specified to be 0 (sell
         # everything) and we do not have any position, do nothin.
@@ -262,13 +267,13 @@ class SimulatedBroker(AbstractBroker):
             price = price * (1 + self.get_slippage(advice, quantity))
         elif advice.quantity_type == 'PERCENT':
             # Cost remains fixed here. Price/Quantity can be varied.
-            required = self.account.equity * advice.quantity/100.
+            required = self.account.equity * advice.quantity/100. / base_rate
             required = required - advice.position * price
             price = price * (1 + self.get_slippage(advice, required))
             quantity = required/price
         elif advice.quantity_type == 'REL_PERCENT':
             # Cost remains fixed here. Price/Quantity can be varied.
-            required = advice.quantity/100*self.account.equity
+            required = advice.quantity/100.0*self.account.equity / base_rate
             price = price * (1 + self.get_slippage(advice, required))
             quantity = required/price
 
@@ -278,25 +283,27 @@ class SimulatedBroker(AbstractBroker):
         # ensure that we do not hold more than the specified amount of equity
         # for this asset. We decrease the quantity such that the new asset
         # allocation is equal to max_position_held.
-        if self.max_position_held:
-            equity = (advice.position + quantity) * price
+        if self.max_position_held >= 1e-8:
+            asset_rate = 1 if advice.asset == pbase else self.get_asset_rate(advice.asset)
+            equity = (advice.position + quantity) * asset_rate
             if abs(equity) > self.max_position_held:
-                quantity = (1 if cost > 0 else -1)*self.max_position_held/price
+                quantity = (1 if cost > 0 else -1)*self.max_position_held/asset_rate
                 quantity -= advice.position
                 cost = quantity * price
 
         # ensure that the cost does not exceed max permittable order size
         # globally for the broker.
-        if self.max_order_size and abs(cost) > self.max_order_size:
-            cost = self.max_order_size * (-1 if cost < 0 else 1)
+        if self.max_order_size and abs(cost) > self.max_order_size / base_rate:
+            cost = self.max_order_size * (-1 if cost < 0 else 1) / base_rate
             quantity = cost/price
 
         # if the advice has a max order size defined with it, limit to that
-        if advice.max_order_size and abs(cost) > advice.max_order_size:
-            cost = advice.max_order_size * (-1 if cost < 0 else 1)
+        if advice.max_order_size and abs(cost) > advice.max_order_size / base_rate:
+            cost = advice.max_order_size * (-1 if cost < 0 else 1) / base_rate
             quantity = cost/price
 
         # finally, allow the strategy to modify order cost, quantity or price
+        # cost should be returned in same currency as advice.base
         if hasattr(self.strategy, 'transform_order_calculation'):
             tp = price if advice.order_type == 'LIMIT' else None
             cost, quantity, tp = self.strategy.transform_order_calculation(
@@ -322,22 +329,25 @@ class SimulatedBroker(AbstractBroker):
         return (round(quantity, 8), round(price*quantity, 8), round(price, 8))
 
     def calculate_commission(self, advice, asset_quantity, order_cost):
-        comm_rate = 1
         comm_asset = self.context.commission_asset
-        if comm_asset and comm_asset != advice.base:
-            comm_sym = self.datacenter.assets_to_symbol(
-                comm_asset, advice.base)
-            comm_rate = self.get_commission_asset_rate(comm_sym)
-        else:
-            comm_asset = advice.base
+
+        order_cost_in_base = order_cost
+        if advice.base != self.context.base_currency:
+            base_asset_rate = self.get_asset_rate(advice.base)
+            order_cost_in_base = order_cost * base_asset_rate
+
+        comm_asset_rate = 1
+        if comm_asset and comm_asset != self.context.base_currency:
+            comm_asset_rate = self.get_asset_rate(comm_asset)
 
         comm = self.context.commission
         if callable(self.context.commission):
-            comm_cost, comm_asset = self.context.commission(advice, asset_quantity, order_cost)
+            comm_cost, comm_asset = self.context.commission(
+                    advice, asset_quantity, order_cost_in_base, comm_asset_rate)
         else:
-            comm_cost = self.context.commission/100. * abs(order_cost)
-        comm = comm_cost/comm_rate
-        return (round(comm, 8), comm_asset, comm_rate, comm_cost)
+            comm_cost = self.context.commission/100. * abs(order_cost_in_base)
+        comm = comm_cost/comm_asset_rate
+        return (round(comm, 8), comm_asset, comm_asset_rate, comm_cost)
 
 
 class CcxtExchangePaperBroker(SimulatedBroker):

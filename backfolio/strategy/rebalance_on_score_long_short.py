@@ -7,16 +7,16 @@ from ..core.utils import fast_xs
 from .base import BaseStrategy
 
 
-class RebalanceOnScoreStrategy(BaseStrategy):
+class RebalanceOnScoreLongShortStrategy(BaseStrategy):
     """
     Strategy that buy top scoring assets, and sells other assets
     every given time interval.
     """
-    def __init__(self, rebalance=1, assets=3, max_assets=13,
-                 max_order_size=0, min_order_size=0.001,
-                 flow_period=1, flow_multiplier=2.5,
-                 markup_sell=1, markdn_buy=1, reserved_cash=0,
-                 min_commission_asset_equity=3, weighted=False, debug=True):
+    def __init__(self, rebalance=1, assets=None, max_assets=None,
+                 max_order_size=None, min_order_size=10,
+                 max_position_held=0, markup_sell=1, markdn_buy=2,
+                 reserved_cash=20, leverage=1, weighted=False, debug=True,
+                 exit_with_any_size=True):
         """
         :param rebalance: number of ticks in a rebalancing period
         :param assets: Number of assets strategy should buy.
@@ -29,15 +29,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             (surpassed if flow is more than this amount). Set to `None`
             to not limit order size using this. To completely, disable
             order size limiting, also set `flow_multiplier` to `0`.
-        :param flow_period: How many ticks to consider for flow based
-            max order sizing?
-        :param flow_multiplier: (in %) %age of flow used. Flow is the
-            average BTC flow for that asset in given period. Set to `0`
-            to disable flow based order size limiting.
         :param markdn_buy: (in %) %age of price to decrease buy orders by.
         :param markup_sell: (in %) %age of price to increase sell orders by.
-        :param min_commission_asset_equity: (in %) capital to keep in
-            commission asset
         :param reserved_cash: (in %) amount of cash wrt total account equity
             to keep in reserve at all times.
         """
@@ -47,13 +40,13 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         self.max_assets = max_assets
         self.min_order_size = min_order_size
         self.max_order_size = max_order_size
-        self.flow_period = flow_period
-        self.flow_multiplier = flow_multiplier
         self.markdn_buy = markdn_buy
         self.markup_sell = markup_sell
-        self.min_commission_asset_equity = min_commission_asset_equity
         self.reserved_cash = reserved_cash
+        self.max_position_held = max_position_held
         self.weighted = weighted
+        self.leverage = leverage
+        self.exit_with_any_size = exit_with_any_size
         self.debug = debug
 
         self.session_fields = ['state']
@@ -130,12 +123,13 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         """
         # # set individually for each order based on flow
         # self.broker.max_order_size = self.max_order_size
-        # self.broker.max_position_held = self.max_order_size
-        self.broker.min_order_size = self.min_order_size
+        if self.max_position_held:
+            self.broker.max_position_held = self.max_position_held
+        if self.min_order_size:
+            self.broker.min_order_size = self.min_order_size
 
     def transform_history(self, panel):
         """
-        Calculate Flow for each point in time for each asset.
         Also, ask the child strategy for an assigned score, and/or
         weight for each asset in new portfolio.
 
@@ -157,9 +151,6 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         specify `score` and `weight` at each tick.
         """
         panel = super().transform_history(panel)
-        panel.loc[:, :, 'flow'] = (
-            panel[:, :, 'close'] * panel[:, :, 'volume']).rolling(
-            self.flow_period).mean()
         if hasattr(self, 'calculate_scores'):
             panel.loc[:, :, 'score'] = self.calculate_scores(panel)
         if hasattr(self, 'calculate_weights'):
@@ -179,14 +170,12 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         If a price is specified, a LIMIT order is issued, otherwise MARKET.
         If `max_cost` is specified, order cost is, further, limited by that
         amount.
+
+        side can be either `BUY` or `SELL` (i.e. LONG or SHORT)
         """
-        if symbol in self.data.index:
-            max_flow = fast_xs(self.data, symbol)['flow']*self.flow_multiplier/100
-        else:
-            max_flow = 1
-        if self.max_order_size:
-            max_flow = max(max_flow, self.max_order_size)
-        max_cost = min(max_cost, max_flow) if max_cost else max_flow
+        max_cost = min(max_cost, self.max_order_size) if max_cost else self.max_order_size
+        if self.exit_with_any_size and (side == "LONG_EXIT" or side == "SHORT_EXIT"):
+            max_cost = None
         args = ('MARKET', None, max_cost, side)
         if price:
             args = ('LIMIT', price, max_cost, side)
@@ -198,22 +187,6 @@ class RebalanceOnScoreStrategy(BaseStrategy):
     def before_summary_report(self):
         """ Syntactic sugar to add a newline before printing summary. """
         print()
-
-    def increase_assets_if_required(self):
-        """
-        Increase number of assets being traded if we have surplus cash,
-        gradually. This function is called at each tick before any
-        advices are given out to ensure we are using max available
-        assets on each tick.
-
-        OPTIMIZE: (old legacy code) This can be optimized further.
-        """
-        if self.assets:
-            limited = self.max_order_size or self.flow_multiplier
-            if limited and self.assets < self.max_assets:
-                equity = self.account.equity
-                if (equity > self.assets**(self.assets**0.2)):
-                    self.assets = min(self.max_assets, self.assets+1)
 
     def transform_order_calculation(self, advice, cost, quantity, price):
         """
@@ -228,27 +201,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         Do NOT set price for MARKET orders.
         You can return `(0, 0, 0)` to not place this order.
         """
-        if cost > 0 and cost >= self.account.free[advice.base] * 0.95:
-            cost = self.account.free[advice.base] * 0.95
+        if abs(cost) > 0 and cost >= self.account.cash * 0.95:
+            cost = self.account.cash * 0.95 * (1 if cost > 0 else -1)
 
-        # if the equity vs quantity calculation, messes up our
-        # ordering side, ensure that we still rebalance, but
-        # we use the correct LIMIT price this time, but
-        # we do this only when the cost of order is less than
-        # 3% of our account equity.
-        if advice.is_limit and advice.asset != self.context.commission_asset:
-            th = self.account.equity*self.min_commission_asset_equity/100
-            if advice.is_buy and cost < 0 and abs(cost) < th:
-                advice.side = "SELL"
-                if price:
-                    price = self.selling_price(
-                        advice.symbol(self), {"price": advice.last_price})
-
-            elif advice.is_sell and cost > 0 and abs(cost) < th:
-                advice.side = "BUY"
-                if price:
-                    price = self.buying_price(
-                        advice.symbol(self), {"price": advice.last_price})
         return (cost, quantity, price)
 
     def selling_price(self, _symbol, data):
@@ -289,7 +244,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 data.loc[:, 'weight'] = weights
 
         data = data.dropna(how='all')
-        data = data[data['volume'] > 0]
+        # data = data[data['volume'] > 0]
         return data
 
     def sorted_data(self, data):
@@ -306,7 +261,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         else:
             return data
 
-    def rebalance_required(self, data, selected, rejected):
+    def rebalance_required(self, data):
         """
         Check whether rebalancing is required at this tick or not.
         If `rebalance` is set as None, we will rebalance (trade) on
@@ -333,7 +288,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         return (not self._last_rebalance or
                 time >= self._last_rebalance + timediff)
 
-    def selected_assets(self, data):
+    def selected_long_assets(self, data):
         """
         Allow child strategy to modify asset selection.
         By default:
@@ -349,44 +304,39 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             return data[data['weight'] > 0]
         elif self.assets:
             data = data[np.isfinite(data['score'])]
-            return data[data['score'] > 0].head(self.assets)
+            return data.head(self.assets)
         else:
             data = data[np.isfinite(data['score'])]
             return data[data['score'] > 0]
 
-    def rejected_assets(self, data):
+    def selected_short_assets(self, data):
         """
         Allow child strategy to modify asset selection.
         By default:
-            - Reject all assets with zero,
+            - Select all assets with positive weights,
               if asset weights are specified
-            - Reject all assets with negative score,
+            - Select all assets with positive score,
               if `assets` is not None
-            - Reject all but top N assets, if `assets` is specified.
-
-        Be careful not to specify negative weights.
+            - Select top N assets, if `assets` is specified.
         """
+        # remove any assets with nan weight or score
         if "weight" in data.columns:
-            return data[data['weight'] == 0]
+            data = data[np.isfinite(data['weight'])]
+            return data[data['weight'] < 0]
         elif self.assets:
-            return data.tail(len(data) - self.assets)
+            data = data[np.isfinite(data['score'])]
+            return data.tail(self.assets)
         else:
+            data = data[np.isfinite(data['score'])]
             return data[data['score'] < 0]
 
-    def assign_weights_and_required_equity(self, data, selected):
+    def assign_weights_and_required_equity(self, data, selected_long, selected_short):
         if "weight" not in data.columns:
             data['weight'] = 0
-            data.loc[selected.index, 'weight'] = 1
-        data['weight'] /= data['weight'].sum()
+            data.loc[selected_long.index, 'weight'] = 1
+            data.loc[selected_short.index, 'weight'] = -1
+        data['weight'] /= data['weight'].abs().sum()
 
-        # if commission_asset falls to 50% of its required minimum,
-        # we need to buy commission asset, therefore, adjust for it
-        asset_equity = self.portfolio.equity_per_asset
-        comm_percent = self.min_commission_asset_equity/100
-        required_comm_equity = self.account.equity * comm_percent
-        current_comm_equity = asset_equity[self.context.commission_asset]
-        if current_comm_equity < required_comm_equity:
-            data['weight'] *= 1 - comm_percent
         if self.reserved_cash:
             data["weight"] *= (1-self.reserved_cash/100)
         data['required_equity'] = data['weight'] * self.account.equity
@@ -407,16 +357,14 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         weights[weights < 0] = 0
         if self.assets:
             weights = weights.sort_values(ascending=False)
-            weights.iloc[self.assets:] = 0
+            weights[weights>0].iloc[self.assets:] = 0
+            weights[weights<0].iloc[:self.assets] = 0
         return weights
 
     def advice_investments_at_tick(self, _tick_event):
         # if we have no data for this tick, do nothing.
         if self.data.empty:
             return
-
-        # increase number of assets if cash allows so.
-        self.increase_assets_if_required()
 
         # transform tick data as per the child strategy,
         # and sort assets based on score assigned to them
@@ -429,20 +377,18 @@ class RebalanceOnScoreStrategy(BaseStrategy):
 
         # select the top performing assets based on their scores,
         # or weights and also, select coins to sell off.
-        selected = self.selected_assets(data)
-        rejected = self.rejected_assets(data)
+        selected_long = self.selected_long_assets(data)
+        selected_short = self.selected_short_assets(data)
 
         # assign weights and required equity for each asset
-        data = self.assign_weights_and_required_equity(data, selected)
+        data = self.assign_weights_and_required_equity(data, selected_long, selected_short)
         equity = self.portfolio.equity_per_asset
         if not self._symbols:
             self._symbols = {asset: self.datacenter.assets_to_symbol(asset)
                              for asset, _ in equity.items()}
 
-        min_comm = self.min_commission_asset_equity/100*self.account.equity
-
         # if we need to wait for rebalancing, do nothing.
-        if self.rebalance_required(data, selected, rejected):
+        if self.rebalance_required(data):
             self.broker.cancel_pending_orders()
         elif self.rebalance:
             return
@@ -453,47 +399,49 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         # ensure tyhat we have it at a fixed percent of equity all the time.
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
-            if (symbol in rejected.index and
-                    symbol in data.index and symbol not in selected.index):
+            if (symbol in data.index and
+                        symbol not in selected_long.index and
+                        symbol not in selected_short.index and
+                        abs(asset_equity) >= 1e-8):
                 asset_data = fast_xs(data, symbol)
-                if asset_equity <= asset_data['required_equity']/100:
-                    continue
-                n, price = 0, self.selling_price(symbol, asset_data)
-                if asset == self.context.commission_asset:
-                    n = self.min_commission_asset_equity
-                    price = asset_data['close']
-                # order can be placed on any side - we dont care due to amount
-                self.order_percent(symbol, n, price)
-
-        # next, sell assets that have higher equity first
-        for asset, asset_equity in equity.items():
-            symbol = self._symbols[asset]
-            if symbol not in selected.index:
-                continue
-            asset_data = fast_xs(data, symbol)
-            if asset_equity > asset_data['required_equity']:
-                price = self.selling_price(symbol, asset_data)
-                n = asset_data['weight'] * 100
-                if asset == self.context.commission_asset:
-                    n = max(self.min_commission_asset_equity, n)
-                self.order_percent(symbol, n, price, side='SELL')
+                if asset_equity > 0:
+                    price = self.selling_price(symbol, asset_data)
+                    self.order_percent(symbol, 0, price, side='LONG_EXIT')
+                elif asset_equity < 0:
+                    price = self.buying_price(symbol, asset_data)
+                    self.order_percent(symbol, 0, price, side='SHORT_EXIT')
 
         # finally, buy assets that have lower equity now
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
-            if symbol not in selected.index:
+            if symbol not in selected_long.index:
                 continue
             asset_data = fast_xs(data, symbol)
+            n = asset_data['weight'] * 100
             if asset_equity < asset_data['required_equity']:
                 price = self.buying_price(symbol, asset_data)
-                n = asset_data['weight'] * 100
-                if (asset == self.context.commission_asset and
-                        asset_equity < min_comm):
-                    self.order_percent(symbol,
-                                       self.min_commission_asset_equity,
-                                       side='BUY')
-                    n -= self.min_commission_asset_equity
-                self.order_percent(symbol, n, price, side='BUY')
+                if asset_equity < 0:
+                    self.order_percent(symbol, 0, price, side='SHORT_EXIT')
+                self.order_percent(symbol, n, price, side='LONG_ENTRY')
+            else:
+                price = self.selling_price(symbol, asset_data)
+                self.order_percent(symbol, n, price, side='LONG_EXIT')
+
+        # finally, buy assets that have lower equity now
+        for asset, asset_equity in equity.items():
+            symbol = self._symbols[asset]
+            if symbol not in selected_short.index:
+                continue
+            asset_data = fast_xs(data, symbol)
+            n = asset_data['weight'] * 100
+            if asset_equity > asset_data['required_equity']:
+                price = self.selling_price(symbol, asset_data)
+                if asset_equity > 0:
+                    self.order_percent(symbol, 0, price, side='LONG_EXIT')
+                self.order_percent(symbol, n, price, side='SHORT_ENTRY')
+            else:
+                price = self.buying_price(symbol, asset_data)
+                self.order_percent(symbol, n, price, side='SHORT_EXIT')
 
         self._last_rebalance = self.tick.time
         self._save_state()
@@ -524,4 +472,3 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 % (order.side, order.order_type, abs(order.quantity),
                    order.asset, order.fill_price, order.base, event.reason),
                 formatted=True, now=event.item.time)
-

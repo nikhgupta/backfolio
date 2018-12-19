@@ -25,6 +25,7 @@ class AbstractAccount(object):
         self.initial_capital = initial_capital
         self._extra_capital = None
         self.session_fields = []
+        self.lender = {}
 
     def __repr__(self):
         bal = dict([key, val] for key, val in self.total.items() if val > 0)
@@ -38,6 +39,7 @@ class AbstractAccount(object):
         self.total = {}
         self.last_update_at = None
         self.get_balance(refresh=True)
+        self.lender = {k: 0 for k, v in self.total.items()}
         return self
 
     def _adjust_for_extra_capital(self):
@@ -154,6 +156,11 @@ class SimulatedAccount(AbstractAccount):
                     print("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
                     from IPython import embed; embed()
                     return False
+            elif expected <= -1e-8 and not self.context.allow_shorting:
+                print("Found negative balance for %s: %s" % (asset, expected))
+                from IPython import embed; embed()
+                return False
+
 
     def display_stats(self):
         print("Free:   %s" % {k: v for k,v in self.free.items()   if v > 0})

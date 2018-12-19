@@ -352,7 +352,9 @@ class BaseDatacenter(object):
                                   for symbol %s:\n%s" % (symbol, str(e)))
                 cdf = None
 
-            if cdf is not None:
+            if cdf is not None and cdf.empty:
+                print("No data loaded for %s" % symbol)
+            elif cdf is not None:
                 histories[symbol] = cdf
 
         # finally, save the data so obtained as a panel for quick ref.

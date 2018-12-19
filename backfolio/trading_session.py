@@ -41,7 +41,7 @@ class TradingSession:
         self._end_time = None
         self._current_time = None
         self._allow_shorting = False
-
+        self._margin_loss_protection = False # whether leveraged positions can go below 100%?
 
     @property
     def mode(self):
@@ -106,6 +106,14 @@ class TradingSession:
     @allow_shorting.setter
     def allow_shorting(self, value):
         self._allow_shorting = value
+
+    @property
+    def margin_loss_protection(self):
+        return self._margin_loss_protection
+
+    @margin_loss_protection.setter
+    def margin_loss_protection(self, value):
+        self._margin_loss_protection = value
 
     @property
     def commission(self):

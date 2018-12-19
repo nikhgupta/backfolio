@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import pandas as pd
-from os.path import join
+from os.path import join, dirname
 
 from .core.object import OrderGroup
 from .core.event import OrderRequestedEvent
@@ -158,6 +158,7 @@ class BasePortfolio(object):
             elif len(self.asset_equity):
                 print("!!!! NOT SURE WHAT TO DO - ASSET's VALUE COULD NOT BE DETERMINED (in portfolio.py)")
                 from IPython import embed; embed()
+                raise "asset's value could not be determined."
             else:
                 resp['asset_equity'][asset] = 0
 
@@ -270,8 +271,9 @@ class BasePortfolio(object):
 
         self._converted_to_pandas = True
 
-    def save_as_benchmark(self, cache_name):
+    def save_as_benchmark(self, *args):
         data_dir = join(self.context.root_dir, "benchmarks")
+        cache_name = "/".join(args)
         cache = join(data_dir, "%s.csv" % cache_name)
-        make_path(data_dir)
+        make_path(dirname(cache))
         self.timeline.to_csv(cache, index=True)

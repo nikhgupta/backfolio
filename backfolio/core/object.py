@@ -39,7 +39,7 @@ class Advice:
         self.id = id if id else generate_id('advice', self)
         self.time = time
         self.max_cost = max_cost
-        self.side = side
+        self._side = side
         self.position = position
         self._symbol = None
 
@@ -62,16 +62,40 @@ class Advice:
         self.__class__._ids.append(val)
 
     @property
+    def side(self):
+        return self._side
+
+    @side.setter
+    def side(self, val):
+        self._side = val
+
+    @property
     def max_order_size(self):
         return self.max_cost
 
     @property
     def is_buy(self):
-        return self.side == "BUY"
+        return self.is_long_entry or self.is_short_exit or self.side == "BUY"
 
     @property
     def is_sell(self):
-        return self.side == "SELL"
+        return self.is_long_exit or self.is_short_entry or self.side == "SELL"
+
+    @property
+    def is_long_entry(self):
+        return self.side == "LONG_ENTRY"
+
+    @property
+    def is_long_exit(self):
+        return self.side == "LONG_EXIT"
+
+    @property
+    def is_short_entry(self):
+        return self.side == "SHORT_ENTRY"
+
+    @property
+    def is_short_exit(self):
+        return self.side == "SHORT_EXIT"
 
     @property
     def is_limit(self):
@@ -170,10 +194,12 @@ class Order:
 
     @property
     def side(self):
-        if self.advice.side and self.advice.side in ["BUY", "SELL"]:
+        allowed = ["LONG_ENTRY", "LONG_EXIT", "SHORT_ENTRY", "SHORT_EXIT", "BUY", "SELL"]
+        if self.advice.side and self.advice.side in allowed:
             return self.advice.side
         else:
-            return 'BUY' if self.quantity > 0 else 'SELL'
+            side = "BUY" if self.quantity > 0 else "SELL"
+            return side
 
     @side.setter
     def side(self, val):
@@ -228,11 +254,27 @@ class Order:
 
     @property
     def is_buy(self):
-        return self.quantity > 0
+        return self.is_long_entry or self.is_short_exit or self.side == "BUY"
 
     @property
     def is_sell(self):
-        return self.quantity < 0
+        return self.is_long_exit or self.is_short_entry or self.side == "SELL"
+
+    @property
+    def is_long_entry(self):
+        return self.side == "LONG_ENTRY"
+
+    @property
+    def is_long_exit(self):
+        return self.side == "LONG_EXIT"
+
+    @property
+    def is_short_entry(self):
+        return self.side == "SHORT_ENTRY"
+
+    @property
+    def is_short_exit(self):
+        return self.side == "SHORT_EXIT"
 
     @property
     def is_open(self):
