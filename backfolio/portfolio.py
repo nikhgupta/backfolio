@@ -92,7 +92,7 @@ class BasePortfolio(object):
         elif len(self.timeline):
             equity = self.timeline[-1]['equity']
         else:
-            equity = np.nan
+            raise ValueError("Not sure how to calculate equity here. Data missing?")
         if hasattr(self.strategy, 'transform_account_equity'):
             equity = self.strategy.transform_account_equity(equity)
         return equity

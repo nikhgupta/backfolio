@@ -347,6 +347,7 @@ class Order:
 class OrderGroup:
     def __init__(self, order, local_id=0):
         self.asset = order.asset
+        self.base = order.base
         self._local_id = local_id if local_id else generate_id('ogroup', self)
         self.orders = [order]
         self.status = 'OPEN'
@@ -367,7 +368,8 @@ class OrderGroup:
 
     @classmethod
     def add_order_to_groups(cls, order, groups):
-        matched = [og for og in groups if og.asset == order.asset]
+        matched = [og for og in groups
+                   if og.asset == order.asset and og.base == order.base]
         if not matched:
             groups.append(cls(order))
         else:
@@ -411,7 +413,7 @@ class OrderGroup:
 
     def add_order(self, order):
         self.orders.append(order)
-        if order.asset != self.asset:
+        if order.asset != self.asset or order.base != self.base:
             raise ValueError("Invalid order being added to group: %s" % order)
         if order.is_buy:
             self.buy_quantity += order.quantity

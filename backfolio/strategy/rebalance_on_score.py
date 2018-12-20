@@ -330,8 +330,13 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             return False
         time = self.tick.time
         timediff = pd.to_timedelta(self.datacenter.timeframe*self.rebalance)
-        return (not self._last_rebalance or
-                time >= self._last_rebalance + timediff)
+        if not self._last_rebalance:
+            return True
+        if time >= self._last_rebalance + timediff:
+            return True
+        if time >= self._last_rebalance and self.context.reprocessing:
+            return True
+        return False
 
     def selected_assets(self, data):
         """
@@ -442,7 +447,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         min_comm = self.min_commission_asset_equity/100*self.account.equity
 
         # if we need to wait for rebalancing, do nothing.
-        if self.rebalance_required(data, selected, rejected):
+        if (self.rebalance_required(data, selected, rejected) and
+                not self.context.reprocessing):
             self.broker.cancel_pending_orders()
         elif self.rebalance:
             return

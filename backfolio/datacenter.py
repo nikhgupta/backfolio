@@ -380,14 +380,15 @@ class BaseDatacenter(object):
 
 class CryptocurrencyDatacenter(BaseDatacenter):
     def __init__(self, exchange, *args,
-                 to_sym='BTC', limit=10000, per_page_limit=1000,
-                 params={}, **kwargs):
+                 to_sym='BTC', limit=100000, per_page_limit=1000,
+                 start_since=None, params={}, **kwargs):
         super().__init__(*args, **kwargs)
         self.to_sym = to_sym
         self.exchange = getattr(ccxt, exchange)(params)
         self.history_limit = limit
         self.per_page_limit = per_page_limit
         self._market_data = {}
+        self.start_since = start_since*1000 if start_since else None
 
         if not self.exchange.has['fetchOHLCV']:
             raise NotImplementedError(
@@ -434,7 +435,10 @@ class CryptocurrencyDatacenter(BaseDatacenter):
     def refresh_history_for_symbol(self, symbol, cdf=None):
         """ Refresh history for a given asset from exchange """
         plen = 0
-        last_timestamp = int(datetime.now().timestamp()*1000) - 7*86400*1000
+        if self.start_since is not None:
+            last_timestamp = int(datetime.now().timestamp()*1000) - self.start_since
+        else:
+            last_timestamp = None
         col_list = ['time', 'open', 'high', 'low', 'close', 'volume']
         if cdf is None:
             cdf = pd.DataFrame(columns=col_list).set_index('time')

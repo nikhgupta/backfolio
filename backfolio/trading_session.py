@@ -352,6 +352,7 @@ class TradingSession:
             raise ValueError("Component %s does not have attr `reset`" % name)
 
     def reset(self):
+        self.reprocessing = False
         self._with_each_component(self.reset_component)
         return self
 
@@ -421,7 +422,10 @@ class TradingSession:
 
         if type(event) == TickUpdateEvent:
             if event.item.time == self.last_run_timestamp():
-                return
+                if self.account.cash <= 1e-3:
+                    return
+                else:
+                    self.reprocessing = True
 
             data = event.item.history
             self._current_time = event.item.time

@@ -284,8 +284,13 @@ class RebalanceOnScoreNseStrategy(BaseStrategy):
             return False
         time = self.tick.time
         timediff = pd.to_timedelta(self.datacenter.timeframe*self.rebalance)
-        return (not self._last_rebalance or
-                time >= self._last_rebalance + timediff)
+        if not self._last_rebalance:
+            return True
+        if time >= self._last_rebalance + timediff:
+            return True
+        if time >= self._last_rebalance and self.context.reprocessing:
+            return True
+        return False
 
     def selected_long_assets(self, data):
         """
@@ -388,7 +393,7 @@ class RebalanceOnScoreNseStrategy(BaseStrategy):
                              for asset, _ in equity.items()}
 
         # if we need to wait for rebalancing, do nothing.
-        if self.rebalance_required(data):
+        if (self.rebalance_required(data) and not self.context.reprocessing):
             self.broker.cancel_pending_orders()
         elif self.rebalance:
             return

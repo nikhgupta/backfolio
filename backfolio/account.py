@@ -61,7 +61,8 @@ class AbstractAccount(object):
         if (not self.free or not self.context.backtesting()):
             self._update_balance()
         cash = self.free[self.context.base_currency]
-        cash = min(self.equity, cash)
+        # if self.equity and self.equity > 0:
+        #     cash = min(self.equity, cash)
         self._adjust_for_extra_capital()
         return cash - self._extra_capital if self._extra_capital else cash
 
