@@ -618,3 +618,78 @@ class QuandlDatacenter(BaseDatacenter):
                                   "Adj. Volume": "volume"})
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
+
+
+
+
+class NseDatacenter(BaseDatacenter):
+    def __init__(self, *args, start="2000-01-01", params={}, **kwargs):
+        defaults = {"realign": False, "fill": True}
+        super().__init__(*args, **{**defaults, **kwargs})
+        self.exchange = Nse()
+        self.to_sym='INR'
+        self._market_data = {}
+        self.start_date = start
+
+    @property
+    def name(self):
+        return "stocks/nse/1d"
+
+    def load_markets(self):
+        if self.refresh_history:
+            stocks = self.exchange.get_stock_codes(cached=False)
+            stocks = set(stocks) - set(['SYMBOL'])
+            self._market_data = {self.assets_to_symbol(k): {} for k in stocks}
+        elif self.history is not None:
+            self._market_data = dict(
+                [(k, {}) for k in self.history.axes[0]])
+        elif self.history is not None:
+            raise ValueError("You must run with refresh=True to load markets")
+        return self._market_data
+
+    def all_symbols(self):
+        """ Fetch all symbols supported by this exchange as a list """
+        if self._selected_symbols:
+            return self._selected_symbols
+
+        self.markets = [key for key, val in self.load_markets().items()]
+        return self.markets
+
+    def symbol_to_assets(self, symbol):
+        return symbol.split("/")
+
+    def assets_to_symbol(self, fsym, tsym=None):
+        tsym = tsym if tsym else self.to_sym
+        return "%s/%s" % (fsym, tsym)
+
+    def refresh_history_for_symbol(self, symbol, cdf=None, exact=False):
+        """ Refresh history for a given asset from exchange """
+        today = datetime.now().strftime("%Y-%m-%d")
+        fsym, tsym = self.symbol_to_assets(symbol)
+        stock = fsym if exact else "%s.NS" % fsym
+
+        df = YahooFinancials(stock)
+        df = df.get_historical_price_data(self.start_date, today, "daily")
+        df = pd.DataFrame.from_records(df[stock]['prices'])
+
+        if df.empty:
+            return df
+
+        df = df.drop(['date'], axis=1)
+        df = df.rename(columns={"dividend_amount": "dividend",
+            "split_coefficient": "split", "close": "realclose", 
+            "adjclose": "close", "formatted_date": "time", "open": "realopen"})
+        df['open'] = df['close'].shift(1)
+
+        if 'time' not in df.columns or 'volume' not in df.columns:
+            from IPython import embed; embed()
+
+        df['time'] = pd.to_datetime(df['time'])
+        df = df.sort_values(by='time', ascending=1).set_index('time')
+        df = df[~np.isnat(df.index)]
+        df.loc[df['volume']==0, :] = np.nan
+
+        if df.empty:
+            return df
+
+        return self._cleanup_and_save_symbol_data(symbol, df)

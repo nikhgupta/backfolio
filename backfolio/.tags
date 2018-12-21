@@ -1,0 +1,806 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	0	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+queue	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/queue.py	/^import queue$/;"	namespace	line:1
+itertools	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/queue.py	/^import itertools$/;"	namespace	line:2
+EventQueueEmpty	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/queue.py	/^class EventQueueEmpty(queue.Empty):$/;"	class	line:5
+EventQueue	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/queue.py	/^class EventQueue(queue.PriorityQueue):$/;"	class	line:9
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/queue.py	/^    def __init__(self, events=[]):$/;"	member	line:15	class:EventQueue
+put	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/queue.py	/^    def put(self, event):$/;"	member	line:21	class:EventQueue
+get	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/queue.py	/^    def get(self, *args, **kwargs):$/;"	member	line:24	class:EventQueue
+BaseEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class BaseEvent(object):$/;"	class	line:4
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __init__(self, item, priority=0):$/;"	member	line:10	class:BaseEvent
+priority	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def priority(self):$/;"	member	line:15	class:BaseEvent
+item	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def item(self):$/;"	member	line:19	class:BaseEvent
+data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def data(self):$/;"	member	line:23	class:BaseEvent
+__eq__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __eq__(self, other):$/;"	member	line:26	class:BaseEvent	file:
+__repr__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __repr__(self):$/;"	member	line:29	class:BaseEvent	file:
+TickUpdateEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class TickUpdateEvent(BaseEvent):$/;"	class	line:33
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __init__(self, tick):$/;"	member	line:37	class:TickUpdateEvent
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class StrategyAdviceEvent(BaseEvent):$/;"	class	line:41
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __init__(self, advice):$/;"	member	line:45	class:StrategyAdviceEvent
+OrderRequestedEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class OrderRequestedEvent(BaseEvent):$/;"	class	line:49
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __init__(self, order_request):$/;"	member	line:53	class:OrderRequestedEvent
+OrderCreatedEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class OrderCreatedEvent(BaseEvent):$/;"	class	line:57
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __init__(self, order, priority=4):$/;"	member	line:61	class:OrderCreatedEvent
+OrderFilledEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class OrderFilledEvent(OrderCreatedEvent):$/;"	class	line:66
+OrderPendingEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class OrderPendingEvent(BaseEvent):$/;"	class	line:70
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __init__(self, order):$/;"	member	line:71	class:OrderPendingEvent
+OrderRejectedEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class OrderRejectedEvent(OrderCreatedEvent):$/;"	class	line:76
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __init__(self, order, reason=None):$/;"	member	line:81	class:OrderRejectedEvent
+data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def data(self):$/;"	member	line:86	class:OrderRejectedEvent
+__repr__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^    def __repr__(self):$/;"	member	line:89	class:OrderRejectedEvent	file:
+OrderUnfilledEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/event.py	/^class OrderUnfilledEvent(OrderRejectedEvent):$/;"	class	line:94
+detect	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^from .utils import detect, generate_id$/;"	namespace	line:1
+generate_id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^from .utils import detect, generate_id$/;"	namespace	line:1
+Tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^class Tick:$/;"	class	line:11
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def __init__(self, time, history):$/;"	member	line:12	class:Tick
+data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def data(self):$/;"	member	line:17	class:Tick
+__repr__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def __repr__(self):$/;"	member	line:20	class:Tick	file:
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^class Advice:$/;"	class	line:24
+_ids	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    _ids = []$/;"	variable	line:25	class:Advice
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def __init__(self, strategy, asset, base, exchange, last_price,$/;"	member	line:27	class:Advice
+_construct_from_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def _construct_from_data(cls, data, _portfolio):$/;"	member	line:47	class:Advice
+id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def id(self):$/;"	member	line:56	class:Advice
+id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def id(self, val):$/;"	member	line:60	class:Advice
+side	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def side(self):$/;"	member	line:65	class:Advice
+side	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def side(self, val):$/;"	member	line:69	class:Advice
+max_order_size	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def max_order_size(self):$/;"	member	line:73	class:Advice
+is_buy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_buy(self):$/;"	member	line:77	class:Advice
+is_sell	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_sell(self):$/;"	member	line:81	class:Advice
+is_long_entry	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_long_entry(self):$/;"	member	line:85	class:Advice
+is_long_exit	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_long_exit(self):$/;"	member	line:89	class:Advice
+is_short_entry	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_short_entry(self):$/;"	member	line:93	class:Advice
+is_short_exit	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_short_exit(self):$/;"	member	line:97	class:Advice
+is_limit	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_limit(self):$/;"	member	line:101	class:Advice
+is_market	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_market(self):$/;"	member	line:105	class:Advice
+symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def symbol(self, context):$/;"	member	line:108	class:Advice
+data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def data(self):$/;"	member	line:115	class:Advice
+__repr__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def __repr__(self):$/;"	member	line:123	class:Advice	file:
+Order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^class Order:$/;"	class	line:127
+_ids	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    _ids = []$/;"	variable	line:128	class:Order
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def __init__(self, advice, exchange, quantity, order_cost,$/;"	member	line:130	class:Order
+_construct_from_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def _construct_from_data(cls, data, portfolio):$/;"	member	line:150	class:Order
+id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def id(self):$/;"	member	line:163	class:Order
+id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def id(self, value):$/;"	member	line:167	class:Order
+local_id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def local_id(self):$/;"	member	line:171	class:Order
+local_id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def local_id(self, val):$/;"	member	line:175	class:Order
+status	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def status(self):$/;"	member	line:180	class:Order
+status	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def status(self, value):$/;"	member	line:184	class:Order
+time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def time(self):$/;"	member	line:188	class:Order
+time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def time(self, value):$/;"	member	line:192	class:Order
+side	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def side(self):$/;"	member	line:196	class:Order
+side	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def side(self, val):$/;"	member	line:205	class:Order
+symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def symbol(self, context):$/;"	member	line:208	class:Order
+exchange	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def exchange(self):$/;"	member	line:212	class:Order
+advice_id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def advice_id(self):$/;"	member	line:216	class:Order
+asset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def asset(self):$/;"	member	line:220	class:Order
+base	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def base(self):$/;"	member	line:224	class:Order
+order_type	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def order_type(self):$/;"	member	line:228	class:Order
+commission_asset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def commission_asset(self):$/;"	member	line:232	class:Order
+commission_asset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def commission_asset(self, val):$/;"	member	line:236	class:Order
+updated_at	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def updated_at(self):$/;"	member	line:240	class:Order
+updated_at	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def updated_at(self, val):$/;"	member	line:244	class:Order
+is_limit	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_limit(self):$/;"	member	line:248	class:Order
+is_market	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_market(self):$/;"	member	line:252	class:Order
+is_buy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_buy(self):$/;"	member	line:256	class:Order
+is_sell	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_sell(self):$/;"	member	line:260	class:Order
+is_long_entry	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_long_entry(self):$/;"	member	line:264	class:Order
+is_long_exit	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_long_exit(self):$/;"	member	line:268	class:Order
+is_short_entry	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_short_entry(self):$/;"	member	line:272	class:Order
+is_short_exit	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_short_exit(self):$/;"	member	line:276	class:Order
+is_open	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_open(self):$/;"	member	line:280	class:Order
+is_closed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_closed(self):$/;"	member	line:284	class:Order
+is_cancelled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_cancelled(self):$/;"	member	line:288	class:Order
+is_partially_filled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def is_partially_filled(self):$/;"	member	line:292	class:Order
+mark_filled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def mark_filled(self, context):$/;"	member	line:295	class:Order
+mark_rejected	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def mark_rejected(self, context, message=None, track=True):$/;"	member	line:302	class:Order
+mark_unfilled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def mark_unfilled(self, context):$/;"	member	line:309	class:Order
+mark_created	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def mark_created(self, context):$/;"	member	line:316	class:Order
+mark_pending	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def mark_pending(self, context):$/;"	member	line:320	class:Order
+mark_cancelled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def mark_cancelled(self, *args, **kwargs):$/;"	member	line:324	class:Order
+mark_closed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def mark_closed(self, *args, **kwargs):$/;"	member	line:327	class:Order
+data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def data(self):$/;"	member	line:331	class:Order
+__repr__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def __repr__(self):$/;"	member	line:343	class:Order	file:
+OrderGroup	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^class OrderGroup:$/;"	class	line:347
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def __init__(self, order, local_id=0):$/;"	member	line:348	class:OrderGroup
+add_order_to_groups	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def add_order_to_groups(cls, order, groups):$/;"	member	line:370	class:OrderGroup
+load_all	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def load_all(cls, orders):$/;"	member	line:384	class:OrderGroup
+buy_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def buy_price(self):$/;"	member	line:391	class:OrderGroup
+sell_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def sell_price(self):$/;"	member	line:395	class:OrderGroup
+remaining_quantity	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def remaining_quantity(self):$/;"	member	line:399	class:OrderGroup
+total_profits	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def total_profits(self):$/;"	member	line:403	class:OrderGroup
+closed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def closed(self):$/;"	member	line:407	class:OrderGroup
+open	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def open(self):$/;"	member	line:411	class:OrderGroup
+add_order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def add_order(self, order):$/;"	member	line:414	class:OrderGroup
+mark_closed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def mark_closed(self):$/;"	member	line:430	class:OrderGroup
+__repr__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def __repr__(self):$/;"	member	line:433	class:OrderGroup	file:
+data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/object.py	/^    def data(self):$/;"	member	line:437	class:OrderGroup
+string	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^import string$/;"	namespace	line:1
+pathlib	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^import pathlib$/;"	namespace	line:2
+importlib	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^import importlib$/;"	namespace	line:3
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^import pandas as pd$/;"	namespace	line:4
+choice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^from random import choice$/;"	namespace	line:5
+join	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^from os.path import join, isfile$/;"	namespace	line:6
+isfile	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^from os.path import join, isfile$/;"	namespace	line:6
+df_apply	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def df_apply(src, ind, *args):$/;"	function	line:9
+fast_xs_values	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def fast_xs_values(df, key):$/;"	function	line:13
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def fast_xs(df, key):$/;"	function	line:20
+make_path	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def make_path(path):$/;"	function	line:37
+load_df	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def load_df(path, name, container, field, array=True, limit=None):$/;"	function	line:41
+as_df	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def as_df(items):$/;"	function	line:66
+save_df	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def save_df(path, name, data):$/;"	function	line:85
+detect	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def detect(items, pred):$/;"	function	line:93
+detect_with_index	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def detect_with_index(items, pred):$/;"	function	line:97
+generate_id	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/core/utils.py	/^def generate_id(name, inst, length=16):$/;"	function	line:101
+requests	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^import requests$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^import pandas as pd$/;"	namespace	line:2
+deepcopy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^from copy import deepcopy$/;"	namespace	line:3
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:4
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:4
+join	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^from os.path import join, isfile$/;"	namespace	line:5
+isfile	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^from os.path import join, isfile$/;"	namespace	line:5
+make_path	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^from .core.utils import make_path$/;"	namespace	line:6
+BaseBenchmark	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^class BaseBenchmark(object):$/;"	class	line:9
+__metaclass__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    __metaclass__ = ABCMeta$/;"	variable	line:27	class:BaseBenchmark
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def __init__(self, name, cache_name=None):$/;"	member	line:29	class:BaseBenchmark
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def reset(self, context=None):$/;"	member	line:35	class:BaseBenchmark
+account	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def account(self):$/;"	member	line:47	class:BaseBenchmark
+broker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def broker(self):$/;"	member	line:51	class:BaseBenchmark
+strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def strategy(self):$/;"	member	line:55	class:BaseBenchmark
+portfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def portfolio(self):$/;"	member	line:59	class:BaseBenchmark
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def reporters(self):$/;"	member	line:63	class:BaseBenchmark
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def benchmarks(self):$/;"	member	line:67	class:BaseBenchmark
+datacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def datacenter(self):$/;"	member	line:71	class:BaseBenchmark
+events	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def events(self):$/;"	member	line:75	class:BaseBenchmark
+data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def data(self):$/;"	member	line:79	class:BaseBenchmark
+timeline	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def timeline(self):$/;"	member	line:83	class:BaseBenchmark
+daily	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def daily(self):$/;"	member	line:88	class:BaseBenchmark
+_sanitize_benchmark_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def _sanitize_benchmark_data(self, data, group_daily=False):$/;"	member	line:92	class:BaseBenchmark
+_fetch_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def _fetch_data(self):$/;"	member	line:114	class:BaseBenchmark
+_returns_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def _returns_data(self):$/;"	member	line:126	class:BaseBenchmark
+SymbolAsBenchmark	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^class SymbolAsBenchmark(BaseBenchmark):$/;"	class	line:130
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def __init__(self, symbol='BTC\/USDT', cache_name=None):$/;"	member	line:131	class:SymbolAsBenchmark
+_returns_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def _returns_data(self):$/;"	member	line:137	class:SymbolAsBenchmark
+StrategyAsBenchmark	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^class StrategyAsBenchmark(BaseBenchmark):$/;"	class	line:141
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def __init__(self, strategy, cache_name=None):$/;"	member	line:142	class:StrategyAsBenchmark
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def reset(self, context=None):$/;"	member	line:148	class:StrategyAsBenchmark
+_returns_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def _returns_data(self):$/;"	member	line:154	class:StrategyAsBenchmark
+CSVAsBenchmark	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^class CSVAsBenchmark(BaseBenchmark):$/;"	class	line:164
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def __init__(self, file_name, name=None):$/;"	member	line:165	class:CSVAsBenchmark
+_returns_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def _returns_data(self):$/;"	member	line:170	class:CSVAsBenchmark
+CryptoMarketCapAsBenchmark	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^class CryptoMarketCapAsBenchmark(BaseBenchmark):$/;"	class	line:178
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def __init__(self, include_btc=False, cache_name=None):$/;"	member	line:179	class:CryptoMarketCapAsBenchmark
+_returns_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def _returns_data(self):$/;"	member	line:186	class:CryptoMarketCapAsBenchmark
+NseIndexAsBenchmark	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^class NseIndexAsBenchmark(BaseBenchmark):$/;"	class	line:206
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def __init__(self, name, cache_name=None):$/;"	member	line:207	class:NseIndexAsBenchmark
+_returns_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/benchmark.py	/^    def _returns_data(self):$/;"	member	line:214	class:NseIndexAsBenchmark
+rolling	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^def rolling(src, tp, min_periods=None):$/;"	function	line:1
+stdev	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^def stdev(src, tp, min_periods=None):$/;"	function	line:7
+rebase	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^def rebase(series):$/;"	function	line:11
+rank	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^def rank(src):$/;"	function	line:15
+ts_rank	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^def ts_rank(src, tp, min_periods=None):$/;"	function	line:19
+rollrank	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^    def rollrank(data):$/;"	function	line:20	function:ts_rank
+beta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^def beta(src, mkt, tp, min_periods=None):$/;"	function	line:25
+alpha	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^def alpha(src, mkt, atp, btp):$/;"	function	line:35
+market_index	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/methods.py	/^def market_index(panel):$/;"	function	line:43
+os	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^import os$/;"	namespace	line:6
+glob	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^import glob$/;"	namespace	line:7
+ccxt	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^import ccxt$/;"	namespace	line:8
+json	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^import json$/;"	namespace	line:9
+pyprind	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^import pyprind$/;"	namespace	line:10
+requests	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^import requests$/;"	namespace	line:11
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^import numpy as np$/;"	namespace	line:12
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^import pandas as pd$/;"	namespace	line:13
+quandl	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    import quandl$/;"	namespace	line:16
+Nse	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    from nsetools import Nse$/;"	namespace	line:21
+YahooFinancials	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    from yahoofinancials import YahooFinancials$/;"	namespace	line:22
+ZipFile	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from zipfile import ZipFile$/;"	namespace	line:26
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:27
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:27
+datetime	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from datetime import datetime$/;"	namespace	line:28
+join	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from os.path import join, basename, isfile$/;"	namespace	line:29
+basename	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from os.path import join, basename, isfile$/;"	namespace	line:29
+isfile	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from os.path import join, basename, isfile$/;"	namespace	line:29
+Tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from .core.object import Tick$/;"	namespace	line:31
+make_path	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from .core.utils import make_path$/;"	namespace	line:32
+TickUpdateEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^from .core.event import TickUpdateEvent$/;"	namespace	line:33
+MAXINT	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^MAXINT = 2**32 - 1$/;"	variable	line:36
+BaseDatacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^class BaseDatacenter(object):$/;"	class	line:39
+__metaclass__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    __metaclass__ = ABCMeta$/;"	variable	line:55	class:BaseDatacenter
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def __init__(self, timeframe='1d', fill=True, realign=True, resample=None):$/;"	member	line:57	class:BaseDatacenter
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def reset(self, context=None, root_dir=None):$/;"	member	line:66	class:BaseDatacenter
+refresh_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def refresh_history(self):$/;"	member	line:92	class:BaseDatacenter
+name	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def name(self):$/;"	member	line:96	class:BaseDatacenter
+data_dir	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def data_dir(self):$/;"	member	line:100	class:BaseDatacenter
+symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def symbols(self):$/;"	member	line:104	class:BaseDatacenter
+symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def symbols(self, arr=[]):$/;"	member	line:108	class:BaseDatacenter
+timeframe	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def timeframe(self):$/;"	member	line:113	class:BaseDatacenter
+timeframe	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def timeframe(self, value):$/;"	member	line:117	class:BaseDatacenter
+timeframe_delta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def timeframe_delta(self):$/;"	member	line:121	class:BaseDatacenter
+history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def history(self):$/;"	member	line:125	class:BaseDatacenter
+replace_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def replace_history(self, data):$/;"	member	line:128	class:BaseDatacenter
+account	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def account(self):$/;"	member	line:132	class:BaseDatacenter
+broker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def broker(self):$/;"	member	line:136	class:BaseDatacenter
+portfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def portfolio(self):$/;"	member	line:140	class:BaseDatacenter
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def reporters(self):$/;"	member	line:144	class:BaseDatacenter
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def benchmarks(self):$/;"	member	line:148	class:BaseDatacenter
+strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def strategy(self):$/;"	member	line:152	class:BaseDatacenter
+events	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def events(self):$/;"	member	line:156	class:BaseDatacenter
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def current_time(self):$/;"	member	line:160	class:BaseDatacenter
+log	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def log(self, message):$/;"	member	line:163	class:BaseDatacenter
+assets_to_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def assets_to_symbol(self, *_args):$/;"	member	line:170	class:BaseDatacenter
+symbol_to_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def symbol_to_assets(self, _symbol):$/;"	member	line:175	class:BaseDatacenter
+all_symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def all_symbols(self):$/;"	member	line:180	class:BaseDatacenter
+refresh_history_for_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def refresh_history_for_symbol(self, symbol, existing=None):$/;"	member	line:188	class:BaseDatacenter
+_next_tick_generator	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def _next_tick_generator(self):$/;"	member	line:195	class:BaseDatacenter
+recent_frames	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def recent_frames(self, n=1):$/;"	member	line:213	class:BaseDatacenter
+next_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def next_tick(self):$/;"	member	line:223	class:BaseDatacenter
+last_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def last_tick(self):$/;"	member	line:240	class:BaseDatacenter
+_sanitize_index	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def _sanitize_index(self, df):$/;"	member	line:256	class:BaseDatacenter
+_sanitize_ohlcv	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def _sanitize_ohlcv(self, df):$/;"	member	line:267	class:BaseDatacenter
+_cleanup_and_save_symbol_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def _cleanup_and_save_symbol_data(self, symbol, df):$/;"	member	line:295	class:BaseDatacenter
+reload_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def reload_history(self, refresh=True):$/;"	member	line:302	class:BaseDatacenter
+CryptocurrencyDatacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^class CryptocurrencyDatacenter(BaseDatacenter):$/;"	class	line:381
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def __init__(self, exchange, *args,$/;"	member	line:382	class:CryptocurrencyDatacenter
+name	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def name(self):$/;"	member	line:398	class:CryptocurrencyDatacenter
+load_markets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def load_markets(self):$/;"	member	line:401	class:CryptocurrencyDatacenter
+all_symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def all_symbols(self):$/;"	member	line:411	class:CryptocurrencyDatacenter
+symbol_to_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def symbol_to_assets(self, symbol):$/;"	member	line:427	class:CryptocurrencyDatacenter
+assets_to_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def assets_to_symbol(self, fsym, tsym=None):$/;"	member	line:430	class:CryptocurrencyDatacenter
+refresh_history_for_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def refresh_history_for_symbol(self, symbol, cdf=None):$/;"	member	line:435	class:CryptocurrencyDatacenter
+CryptocompareDatacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^class CryptocompareDatacenter(BaseDatacenter):$/;"	class	line:469
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def __init__(self, exchange, *args,$/;"	member	line:470	class:CryptocompareDatacenter
+name	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def name(self):$/;"	member	line:479	class:CryptocompareDatacenter
+load_markets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def load_markets(self):$/;"	member	line:482	class:CryptocompareDatacenter
+all_symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def all_symbols(self):$/;"	member	line:492	class:CryptocompareDatacenter
+symbol_to_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def symbol_to_assets(self, symbol):$/;"	member	line:508	class:CryptocompareDatacenter
+assets_to_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def assets_to_symbol(self, fsym, tsym=None):$/;"	member	line:511	class:CryptocompareDatacenter
+refresh_history_for_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def refresh_history_for_symbol(self, symbol, cdf=None):$/;"	member	line:516	class:CryptocompareDatacenter
+QuandlDatacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^class QuandlDatacenter(BaseDatacenter):$/;"	class	line:558
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def __init__(self, table, *args, api_key=None, **kwargs):$/;"	member	line:559	class:QuandlDatacenter
+name	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def name(self):$/;"	member	line:569	class:QuandlDatacenter
+load_markets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def load_markets(self):$/;"	member	line:572	class:QuandlDatacenter
+all_symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def all_symbols(self):$/;"	member	line:592	class:QuandlDatacenter
+symbol_to_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def symbol_to_assets(self, symbol):$/;"	member	line:602	class:QuandlDatacenter
+assets_to_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def assets_to_symbol(self, fsym, tsym='USD'):$/;"	member	line:605	class:QuandlDatacenter
+refresh_history_for_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def refresh_history_for_symbol(self, symbol, cdf=None):$/;"	member	line:608	class:QuandlDatacenter
+NseDatacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^class NseDatacenter(BaseDatacenter):$/;"	class	line:625
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def __init__(self, *args, start="2000-01-01", params={}, **kwargs):$/;"	member	line:626	class:NseDatacenter
+name	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def name(self):$/;"	member	line:635	class:NseDatacenter
+load_markets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def load_markets(self):$/;"	member	line:638	class:NseDatacenter
+all_symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def all_symbols(self):$/;"	member	line:650	class:NseDatacenter
+symbol_to_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def symbol_to_assets(self, symbol):$/;"	member	line:658	class:NseDatacenter
+assets_to_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def assets_to_symbol(self, fsym, tsym=None):$/;"	member	line:661	class:NseDatacenter
+refresh_history_for_symbol	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^    def refresh_history_for_symbol(self, symbol, cdf=None, exact=False):$/;"	member	line:665	class:NseDatacenter
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^            from IPython import embed; embed()$/;"	namespace	line:685
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/datacenter.py	/^            from IPython import embed; embed()$/;"	namespace	line:685
+requests	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^import requests$/;"	namespace	line:1
+datetime	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^from datetime import datetime$/;"	namespace	line:2
+join	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^from os.path import join, isfile$/;"	namespace	line:3
+isfile	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^from os.path import join, isfile$/;"	namespace	line:3
+AbstractNotifier	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^class AbstractNotifier:$/;"	class	line:6
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def __init__(self, name='notifier'):$/;"	member	line:7	class:AbstractNotifier
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def reset(self, context=None):$/;"	member	line:11	class:AbstractNotifier
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def current_time(self):$/;"	member	line:16	class:AbstractNotifier
+notify	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def notify(self, _message, _now=None):$/;"	member	line:19	class:AbstractNotifier
+formatted_notify	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def formatted_notify(self, message, now=None):$/;"	member	line:22	class:AbstractNotifier
+SlackNotifier	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^class SlackNotifier(AbstractNotifier):$/;"	class	line:29
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def __init__(self, name, url):$/;"	member	line:30	class:SlackNotifier
+notify	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def notify(self, message, _now=None):$/;"	member	line:34	class:SlackNotifier
+FileLogger	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^class FileLogger(AbstractNotifier):$/;"	class	line:38
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def __init__(self, name):$/;"	member	line:39	class:FileLogger
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def reset(self, *args, **kwargs):$/;"	member	line:42	class:FileLogger
+notify	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/notifier.py	/^    def notify(self, message, _now=None):$/;"	member	line:46	class:FileLogger
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^import pandas as pd$/;"	namespace	line:2
+ep	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^import empyrical as ep$/;"	namespace	line:3
+matplotlib	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^import matplotlib.pyplot as plt$/;"	namespace	line:4
+plt	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^import matplotlib.pyplot as plt$/;"	namespace	line:4
+AbstractReporter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^class AbstractReporter(object):$/;"	class	line:7
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def __init__(self, name=''):$/;"	member	line:8	class:AbstractReporter
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def reset(self, context=None):$/;"	member	line:13	class:AbstractReporter
+generate_tick_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def generate_tick_report(self):$/;"	member	line:17	class:AbstractReporter
+generate_summary_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def generate_summary_report(self):$/;"	member	line:24	class:AbstractReporter
+name	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def name(self):$/;"	member	line:31	class:AbstractReporter
+data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def data(self):$/;"	member	line:35	class:AbstractReporter
+account	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def account(self):$/;"	member	line:39	class:AbstractReporter
+broker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def broker(self):$/;"	member	line:43	class:AbstractReporter
+strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def strategy(self):$/;"	member	line:47	class:AbstractReporter
+portfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def portfolio(self):$/;"	member	line:51	class:AbstractReporter
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def reporters(self):$/;"	member	line:55	class:AbstractReporter
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def benchmarks(self):$/;"	member	line:59	class:AbstractReporter
+datacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def datacenter(self):$/;"	member	line:63	class:AbstractReporter
+events	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def events(self):$/;"	member	line:67	class:AbstractReporter
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def current_time(self):$/;"	member	line:71	class:AbstractReporter
+BaseReporter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^class BaseReporter(AbstractReporter):$/;"	class	line:75
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def __init__(self, annualization=365, daily=True,$/;"	member	line:76	class:BaseReporter
+generate_summary_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def generate_summary_report(self):$/;"	member	line:85	class:BaseReporter
+CashAndEquityReporter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^class CashAndEquityReporter(AbstractReporter):$/;"	class	line:173
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def __init__(self, log_axis=False, mean=True, bounds=False,$/;"	member	line:174	class:CashAndEquityReporter
+generate_tick_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def generate_tick_report(self):$/;"	member	line:184	class:CashAndEquityReporter
+_plot_with_averages	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def _plot_with_averages(self, axis, name, data, **kwargs):$/;"	member	line:198	class:CashAndEquityReporter
+generate_summary_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def generate_summary_report(self):$/;"	member	line:207	class:CashAndEquityReporter
+OrdersReporter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^class OrdersReporter(AbstractReporter):$/;"	class	line:222
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def __init__(self):$/;"	member	line:223	class:OrdersReporter
+generate_summary_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def generate_summary_report(self):$/;"	member	line:226	class:OrdersReporter
+hr	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^            def hr(sep, size=75): print("+"+sep*size+"+")$/;"	function	line:262	function:OrdersReporter.generate_summary_report
+MonteCarloAnalysis	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^class MonteCarloAnalysis(AbstractReporter):$/;"	class	line:288
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def __init__(self, simulations=2000, histogram=True, log_axis=True,$/;"	member	line:289	class:MonteCarloAnalysis
+max_dd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def max_dd(returns):$/;"	member	line:298	class:MonteCarloAnalysis
+generate_summary_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/reporter.py	/^    def generate_summary_report(self):$/;"	member	line:307	class:MonteCarloAnalysis
+__email__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/__init__.py	/^__email__ = 'me@nikhgupta.com'$/;"	variable	line:6
+__version__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/__init__.py	/^__version__ = '0.1.0'$/;"	variable	line:7
+os	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^import os$/;"	namespace	line:1
+math	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^import math$/;"	namespace	line:2
+random	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^import random$/;"	namespace	line:3
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^import pandas as pd$/;"	namespace	line:4
+ep	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^import empyrical as ep$/;"	namespace	line:5
+tabulate	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from tabulate import tabulate$/;"	namespace	line:6
+matplotlib	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^import matplotlib.pyplot as plt$/;"	namespace	line:7
+plt	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^import matplotlib.pyplot as plt$/;"	namespace	line:7
+BasePortfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .portfolio import BasePortfolio$/;"	namespace	line:9
+SimulatedAccount	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .account import SimulatedAccount, CcxtExchangeAccount$/;"	namespace	line:10
+CcxtExchangeAccount	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .account import SimulatedAccount, CcxtExchangeAccount$/;"	namespace	line:10
+BacktestSession	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .trading_session import BacktestSession, LiveTradingSession$/;"	namespace	line:11
+LiveTradingSession	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .trading_session import BacktestSession, LiveTradingSession$/;"	namespace	line:11
+CryptoDC	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .datacenter import CryptocurrencyDatacenter as CryptoDC$/;"	namespace	line:13
+SimulatedBroker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .broker import SimulatedBroker, CcxtExchangeBroker$/;"	namespace	line:14
+CcxtExchangeBroker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .broker import SimulatedBroker, CcxtExchangeBroker$/;"	namespace	line:14
+FileLogger	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .notifier import FileLogger, SlackNotifier$/;"	namespace	line:15
+SlackNotifier	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .notifier import FileLogger, SlackNotifier$/;"	namespace	line:15
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^from .core.utils import fast_xs$/;"	namespace	line:17
+ccxt_backtest	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^def ccxt_backtest(strat, start_time=None, end_time=None, daily=True,$/;"	function	line:25
+binance_backtest	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^def binance_backtest(*args, **kwargs):$/;"	function	line:77
+bittrex_backtest	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^def bittrex_backtest(*args, **kwargs):$/;"	function	line:85
+ccxt_live	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^def ccxt_live(name, session, strat, cred, slack_url,$/;"	function	line:89
+quick_bt	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/api.py	/^def quick_bt(history, lookup, top=None, bottom=None, ft=None, tt=None,$/;"	function	line:127
+sys	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/cli.py	/^import sys$/;"	namespace	line:4
+click	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/cli.py	/^import click$/;"	namespace	line:5
+main	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/cli.py	/^def main(args=None):$/;"	function	line:9
+ccxt	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^import ccxt$/;"	namespace	line:1
+isnan	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^from math import isnan$/;"	namespace	line:2
+datetime	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^from datetime import datetime$/;"	namespace	line:3
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:4
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:4
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^from .core.utils import fast_xs$/;"	namespace	line:5
+Order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^from .core.object import Order$/;"	namespace	line:6
+InsufficientFunds	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^from ccxt.base.errors import InsufficientFunds, OrderNotFound$/;"	namespace	line:7
+OrderNotFound	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^from ccxt.base.errors import InsufficientFunds, OrderNotFound$/;"	namespace	line:7
+AbstractBroker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^class AbstractBroker(object):$/;"	class	line:10
+__metaclass__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    __metaclass__ = ABCMeta$/;"	variable	line:28	class:AbstractBroker
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def __init__(self):$/;"	member	line:30	class:AbstractBroker
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def reset(self, context):$/;"	member	line:33	class:AbstractBroker
+account	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def account(self):$/;"	member	line:42	class:AbstractBroker
+portfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def portfolio(self):$/;"	member	line:46	class:AbstractBroker
+strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def strategy(self):$/;"	member	line:50	class:AbstractBroker
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def reporters(self):$/;"	member	line:54	class:AbstractBroker
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def benchmarks(self):$/;"	member	line:58	class:AbstractBroker
+datacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def datacenter(self):$/;"	member	line:62	class:AbstractBroker
+events	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def events(self):$/;"	member	line:66	class:AbstractBroker
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def current_time(self):$/;"	member	line:70	class:AbstractBroker
+min_order_size	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def min_order_size(self):$/;"	member	line:74	class:AbstractBroker
+min_order_size	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def min_order_size(self, size=0.0001):$/;"	member	line:78	class:AbstractBroker
+max_order_size	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def max_order_size(self):$/;"	member	line:82	class:AbstractBroker
+max_order_size	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def max_order_size(self, size=0):$/;"	member	line:86	class:AbstractBroker
+max_position_held	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def max_position_held(self):$/;"	member	line:90	class:AbstractBroker
+max_position_held	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def max_position_held(self, equity=0):$/;"	member	line:94	class:AbstractBroker
+create_order_after_placement	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def create_order_after_placement(self, _order_requested_event):$/;"	member	line:98	class:AbstractBroker
+execute_order_after_creation	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def execute_order_after_creation(self, _order_requested_event):$/;"	member	line:106	class:AbstractBroker
+cancel_pending_orders	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def cancel_pending_orders(self):$/;"	member	line:114	class:AbstractBroker
+check_order_statuses	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def check_order_statuses(self):$/;"	member	line:121	class:AbstractBroker
+SimulatedBroker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^class SimulatedBroker(AbstractBroker):$/;"	class	line:125
+check_order_statuses	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def check_order_statuses(self):$/;"	member	line:135	class:SimulatedBroker
+create_order_after_placement	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def create_order_after_placement(self, order_requested_event,$/;"	member	line:139	class:SimulatedBroker
+execute_order_after_creation	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def execute_order_after_creation(self, order_created_event, exchange=None):$/;"	member	line:164	class:SimulatedBroker
+cancel_pending_orders	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def cancel_pending_orders(self, symbol=None):$/;"	member	line:223	class:SimulatedBroker
+get_order_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def get_order_price(self, advice):$/;"	member	line:230	class:SimulatedBroker
+get_slippage	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def get_slippage(self, advice, direction):$/;"	member	line:239	class:SimulatedBroker
+get_asset_rate	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def get_asset_rate(self, asset):$/;"	member	line:246	class:SimulatedBroker
+calculate_order_shares_and_cost	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def calculate_order_shares_and_cost(self, advice):$/;"	member	line:250	class:SimulatedBroker
+calculate_commission	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def calculate_commission(self, advice, asset_quantity, order_cost):$/;"	member	line:331	class:SimulatedBroker
+CcxtExchangePaperBroker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^class CcxtExchangePaperBroker(SimulatedBroker):$/;"	class	line:353
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def __init__(self, exchange, params={}):$/;"	member	line:354	class:CcxtExchangePaperBroker
+get_slippage	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def get_slippage(self, advice, direction):$/;"	member	line:358	class:CcxtExchangePaperBroker
+get_order_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def get_order_price(self, advice):$/;"	member	line:363	class:CcxtExchangePaperBroker
+get_commission_asset_rate	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def get_commission_asset_rate(self, comm_symbol):$/;"	member	line:374	class:CcxtExchangePaperBroker
+create_order_after_placement	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def create_order_after_placement(self, order_requested_event,$/;"	member	line:377	class:CcxtExchangePaperBroker
+execute_order_after_creation	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def execute_order_after_creation(self, order_created_event,$/;"	member	line:388	class:CcxtExchangePaperBroker
+CcxtExchangeBroker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^class CcxtExchangeBroker(CcxtExchangePaperBroker):$/;"	class	line:400
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def __init__(self, *args, **kwargs):$/;"	member	line:401	class:CcxtExchangeBroker
+get_slippage	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def get_slippage(self, _advice, _direction):$/;"	member	line:404	class:CcxtExchangeBroker
+cancel_pending_orders	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def cancel_pending_orders(self, symbol=None):$/;"	member	line:407	class:CcxtExchangeBroker
+reject_order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def reject_order(self, order, reason):$/;"	member	line:432	class:CcxtExchangeBroker
+create_order_after_placement	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def create_order_after_placement(self, order_requested_event,$/;"	member	line:436	class:CcxtExchangeBroker
+__place_order_on_exchange	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def __place_order_on_exchange(self, order, symbol, quantity, price):$/;"	member	line:448	class:CcxtExchangeBroker	file:
+execute_order_after_creation	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def execute_order_after_creation(self, order_created_event, exchange=None):$/;"	member	line:477	class:CcxtExchangeBroker
+check_order_statuses	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/broker.py	/^    def check_order_statuses(self):$/;"	member	line:517	class:CcxtExchangeBroker
+math	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^import math$/;"	namespace	line:1
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^import numpy as np$/;"	namespace	line:2
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^import pandas as pd$/;"	namespace	line:3
+join	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^from os.path import join, dirname$/;"	namespace	line:4
+dirname	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^from os.path import join, dirname$/;"	namespace	line:4
+OrderGroup	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^from .core.object import OrderGroup$/;"	namespace	line:6
+OrderRequestedEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^from .core.event import OrderRequestedEvent$/;"	namespace	line:7
+as_df	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^from .core.utils import as_df, make_path, fast_xs$/;"	namespace	line:8
+make_path	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^from .core.utils import as_df, make_path, fast_xs$/;"	namespace	line:8
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^from .core.utils import as_df, make_path, fast_xs$/;"	namespace	line:8
+BasePortfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^class BasePortfolio(object):$/;"	class	line:11
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def __init__(self):$/;"	member	line:24	class:BasePortfolio
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def reset(self, context):$/;"	member	line:27	class:BasePortfolio
+account	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def account(self):$/;"	member	line:50	class:BasePortfolio
+broker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def broker(self):$/;"	member	line:54	class:BasePortfolio
+strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def strategy(self):$/;"	member	line:58	class:BasePortfolio
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def reporters(self):$/;"	member	line:62	class:BasePortfolio
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def benchmarks(self):$/;"	member	line:66	class:BasePortfolio
+datacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def datacenter(self):$/;"	member	line:70	class:BasePortfolio
+events	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def events(self):$/;"	member	line:74	class:BasePortfolio
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def current_time(self):$/;"	member	line:78	class:BasePortfolio
+cash	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def cash(self):$/;"	member	line:82	class:BasePortfolio
+equity	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def equity(self):$/;"	member	line:89	class:BasePortfolio
+equity_per_asset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def equity_per_asset(self, n=1):$/;"	member	line:101	class:BasePortfolio
+update_portfolio_value_at_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def update_portfolio_value_at_tick(self, tick_event):$/;"	member	line:115	class:BasePortfolio
+last_positions_and_equities_at_tick_open	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def last_positions_and_equities_at_tick_open(self, field='open'):$/;"	member	line:132	class:BasePortfolio
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^                from IPython import embed; embed()$/;"	namespace	line:163
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^                from IPython import embed; embed()$/;"	namespace	line:163
+last_positions_and_equities_at_tick_close	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def last_positions_and_equities_at_tick_close(self):$/;"	member	line:173	class:BasePortfolio
+is_holding_delisted_asset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def is_holding_delisted_asset(self, asset, symbol=None):$/;"	member	line:176	class:BasePortfolio
+record_advice_from_strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def record_advice_from_strategy(self, advice_event):$/;"	member	line:191	class:BasePortfolio
+place_order_after_advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def place_order_after_advice(self, advice_event):$/;"	member	line:194	class:BasePortfolio
+record_created_order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def record_created_order(self, order_event, created_order=None):$/;"	member	line:199	class:BasePortfolio
+record_filled_order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def record_filled_order(self, order_filled_event):$/;"	member	line:204	class:BasePortfolio
+record_rejected_order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def record_rejected_order(self, rejected_order_event):$/;"	member	line:212	class:BasePortfolio
+record_unfilled_order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def record_unfilled_order(self, unfilled_order_event):$/;"	member	line:218	class:BasePortfolio
+update_commission_paid	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def update_commission_paid(self, event):$/;"	member	line:224	class:BasePortfolio
+trading_session_tick_complete	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def trading_session_tick_complete(self):$/;"	member	line:235	class:BasePortfolio
+_load_order_groups	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def _load_order_groups(self):$/;"	member	line:238	class:BasePortfolio
+closed_orders	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def closed_orders(self):$/;"	member	line:242	class:BasePortfolio
+trading_session_complete	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def trading_session_complete(self):$/;"	member	line:248	class:BasePortfolio
+save_as_benchmark	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/portfolio.py	/^    def save_as_benchmark(self, *args):$/;"	member	line:279	class:BasePortfolio
+time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^import time$/;"	namespace	line:1
+traceback	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^import traceback$/;"	namespace	line:2
+datetime	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from datetime import datetime$/;"	namespace	line:3
+deepcopy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from copy import deepcopy$/;"	namespace	line:4
+join	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from os.path import join, expanduser$/;"	namespace	line:5
+expanduser	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from os.path import join, expanduser$/;"	namespace	line:5
+make_path	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from .core.utils import make_path, load_df, save_df$/;"	namespace	line:7
+load_df	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from .core.utils import make_path, load_df, save_df$/;"	namespace	line:7
+save_df	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from .core.utils import make_path, load_df, save_df$/;"	namespace	line:7
+EventQueue	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from .core.queue import (EventQueue, EventQueueEmpty)$/;"	namespace	line:8
+EventQueueEmpty	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^from .core.queue import (EventQueue, EventQueueEmpty)$/;"	namespace	line:8
+TradingSession	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^class TradingSession:$/;"	class	line:21
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def __init__(self, debug=False, base_currency='BTC'):$/;"	member	line:22	class:TradingSession
+mode	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def mode(self):$/;"	member	line:47	class:TradingSession
+debug	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def debug(self):$/;"	member	line:51	class:TradingSession
+debug	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def debug(self, value):$/;"	member	line:55	class:TradingSession
+refresh_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def refresh_history(self):$/;"	member	line:59	class:TradingSession
+refresh_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def refresh_history(self, value):$/;"	member	line:63	class:TradingSession
+start_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def start_time(self):$/;"	member	line:67	class:TradingSession
+start_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def start_time(self, value):$/;"	member	line:71	class:TradingSession
+end_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def end_time(self):$/;"	member	line:75	class:TradingSession
+end_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def end_time(self, value):$/;"	member	line:79	class:TradingSession
+root_dir	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def root_dir(self):$/;"	member	line:83	class:TradingSession
+root_dir	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def root_dir(self, value):$/;"	member	line:90	class:TradingSession
+base_currency	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def base_currency(self):$/;"	member	line:95	class:TradingSession
+base_currency	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def base_currency(self, value):$/;"	member	line:99	class:TradingSession
+allow_shorting	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def allow_shorting(self):$/;"	member	line:103	class:TradingSession
+allow_shorting	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def allow_shorting(self, value):$/;"	member	line:107	class:TradingSession
+margin_loss_protection	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def margin_loss_protection(self):$/;"	member	line:111	class:TradingSession
+margin_loss_protection	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def margin_loss_protection(self, value):$/;"	member	line:115	class:TradingSession
+commission	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def commission(self):$/;"	member	line:119	class:TradingSession
+commission_asset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def commission_asset(self):$/;"	member	line:123	class:TradingSession
+commission	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def commission(self, value):$/;"	member	line:127	class:TradingSession
+slippage	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def slippage(self):$/;"	member	line:135	class:TradingSession
+slippage	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def slippage(self, slippage_fn):$/;"	member	line:139	class:TradingSession
+broker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def broker(self):$/;"	member	line:143	class:TradingSession
+broker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def broker(self, inst):$/;"	member	line:147	class:TradingSession
+account	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def account(self):$/;"	member	line:151	class:TradingSession
+account	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def account(self, inst):$/;"	member	line:155	class:TradingSession
+datacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def datacenter(self):$/;"	member	line:159	class:TradingSession
+datacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def datacenter(self, inst):$/;"	member	line:163	class:TradingSession
+portfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def portfolio(self):$/;"	member	line:167	class:TradingSession
+portfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def portfolio(self, inst):$/;"	member	line:171	class:TradingSession
+strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def strategy(self):$/;"	member	line:175	class:TradingSession
+strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def strategy(self, inst):$/;"	member	line:179	class:TradingSession
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def reporters(self):$/;"	member	line:183	class:TradingSession
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def reporters(self, arr=[]):$/;"	member	line:189	class:TradingSession
+add_reporter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def add_reporter(self, reporter):$/;"	member	line:192	class:TradingSession
+run_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def run_report(self, reporter):$/;"	member	line:195	class:TradingSession
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def benchmarks(self):$/;"	member	line:199	class:TradingSession
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def benchmarks(self, arr=[]):$/;"	member	line:205	class:TradingSession
+add_benchmark	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def add_benchmark(self, benchmark):$/;"	member	line:208	class:TradingSession
+notifiers	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def notifiers(self):$/;"	member	line:212	class:TradingSession
+notifiers	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def notifiers(self, arr=[]):$/;"	member	line:218	class:TradingSession
+add_notifier	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def add_notifier(self, notifier):$/;"	member	line:221	class:TradingSession
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def current_time(self):$/;"	member	line:225	class:TradingSession
+log	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def log(self, message):$/;"	member	line:228	class:TradingSession
+notify	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def notify(self, message, formatted=True, now=None):$/;"	member	line:232	class:TradingSession
+notify_error	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def notify_error(self, err):$/;"	member	line:241	class:TradingSession
+backtesting	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def backtesting(self):$/;"	member	line:246	class:TradingSession
+paper_trading	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def paper_trading(self):$/;"	member	line:249	class:TradingSession
+live_trading	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def live_trading(self):$/;"	member	line:252	class:TradingSession
+has_session	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def has_session(self):$/;"	member	line:255	class:TradingSession
+_with_each_component	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _with_each_component(self, fn):$/;"	member	line:260	class:TradingSession
+_load_state_from_session_for_component	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _load_state_from_session_for_component(self, name, component):$/;"	member	line:273	class:TradingSession
+_load_state_from_session	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _load_state_from_session(self, fields=[]):$/;"	member	line:281	class:TradingSession
+_save_state_in_session_for_component	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _save_state_in_session_for_component(self, name, component):$/;"	member	line:287	class:TradingSession
+_save_state_in_session	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _save_state_in_session(self, fields=[]):$/;"	member	line:296	class:TradingSession
+_run_hook	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _run_hook(self, name, *args):$/;"	member	line:302	class:TradingSession
+mutate_datacenter_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def mutate_datacenter_history(self, refresh=True):$/;"	member	line:306	class:TradingSession
+_run_benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _run_benchmarks(self):$/;"	member	line:314	class:TradingSession
+_before_trading_start	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _before_trading_start(self):$/;"	member	line:320	class:TradingSession
+_before_each_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _before_each_tick(self):$/;"	member	line:323	class:TradingSession
+_on_each_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _on_each_tick(self):$/;"	member	line:326	class:TradingSession
+_should_reloop	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _should_reloop(self):$/;"	member	line:329	class:TradingSession
+_after_each_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _after_each_tick(self):$/;"	member	line:332	class:TradingSession
+_after_trading_end	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _after_trading_end(self):$/;"	member	line:335	class:TradingSession
+_get_next_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _get_next_tick(self):$/;"	member	line:338	class:TradingSession
+reset_component	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def reset_component(self, name, component):$/;"	member	line:346	class:TradingSession
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def reset(self):$/;"	member	line:354	class:TradingSession
+last_run_timestamp	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def last_run_timestamp(self):$/;"	member	line:359	class:TradingSession
+run	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def run(self, report=True):$/;"	member	line:363	class:TradingSession
+_process_event	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _process_event(self, event):$/;"	member	line:420	class:TradingSession
+delist_asset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def delist_asset(self, asset, asset_equity):$/;"	member	line:490	class:TradingSession
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^                from IPython import embed; embed()$/;"	namespace	line:511
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^                from IPython import embed; embed()$/;"	namespace	line:511
+BacktestSession	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^class BacktestSession(TradingSession):$/;"	class	line:520
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def __init__(self, *args, **kwargs):$/;"	member	line:521	class:BacktestSession
+_get_next_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _get_next_tick(self):$/;"	member	line:525	class:BacktestSession
+PaperTradingSession	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^class PaperTradingSession(TradingSession):$/;"	class	line:532
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def __init__(self, *args, session=None, poll_frequency=None, **kwargs):$/;"	member	line:533	class:PaperTradingSession
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def current_time(self):$/;"	member	line:540	class:PaperTradingSession
+refresh_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def refresh_history(self):$/;"	member	line:544	class:PaperTradingSession
+refresh_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def refresh_history(self, _value):$/;"	member	line:548	class:PaperTradingSession
+start_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def start_time(self):$/;"	member	line:552	class:PaperTradingSession
+start_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def start_time(self, value):$/;"	member	line:556	class:PaperTradingSession
+end_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def end_time(self):$/;"	member	line:560	class:PaperTradingSession
+end_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def end_time(self, value):$/;"	member	line:564	class:PaperTradingSession
+session	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def session(self):$/;"	member	line:568	class:PaperTradingSession
+session	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def session(self, value):$/;"	member	line:572	class:PaperTradingSession
+session_dir	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def session_dir(self):$/;"	member	line:580	class:PaperTradingSession
+poll_frequency	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def poll_frequency(self):$/;"	member	line:584	class:PaperTradingSession
+poll_frequency	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def poll_frequency(self, value):$/;"	member	line:588	class:PaperTradingSession
+_after_each_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _after_each_tick(self):$/;"	member	line:591	class:PaperTradingSession
+_should_reloop	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def _should_reloop(self):$/;"	member	line:595	class:PaperTradingSession
+run	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def run(self, *args, **kwargs):$/;"	member	line:598	class:PaperTradingSession
+LiveTradingSession	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^class LiveTradingSession(PaperTradingSession):$/;"	class	line:605
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def __init__(self, *args, **kwargs):$/;"	member	line:606	class:LiveTradingSession
+slippage	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def slippage(self):$/;"	member	line:612	class:LiveTradingSession
+slippage	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/trading_session.py	/^    def slippage(self, slippage_fn):$/;"	member	line:616	class:LiveTradingSession
+ccxt	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^import ccxt$/;"	namespace	line:1
+datetime	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^import datetime$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+AbstractAccount	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^class AbstractAccount(object):$/;"	class	line:6
+__metaclass__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    __metaclass__ = ABCMeta$/;"	variable	line:18	class:AbstractAccount
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def __init__(self, initial_capital=None):$/;"	member	line:20	class:AbstractAccount
+__repr__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def __repr__(self):$/;"	member	line:30	class:AbstractAccount	file:
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def reset(self, context):$/;"	member	line:34	class:AbstractAccount
+_adjust_for_extra_capital	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def _adjust_for_extra_capital(self):$/;"	member	line:45	class:AbstractAccount
+cash	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def cash(self):$/;"	member	line:60	class:AbstractAccount
+equity	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def equity(self):$/;"	member	line:70	class:AbstractAccount
+portfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def portfolio(self):$/;"	member	line:74	class:AbstractAccount
+broker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def broker(self):$/;"	member	line:78	class:AbstractAccount
+strategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def strategy(self):$/;"	member	line:82	class:AbstractAccount
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def reporters(self):$/;"	member	line:86	class:AbstractAccount
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def benchmarks(self):$/;"	member	line:90	class:AbstractAccount
+datacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def datacenter(self):$/;"	member	line:94	class:AbstractAccount
+events	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def events(self):$/;"	member	line:98	class:AbstractAccount
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def current_time(self):$/;"	member	line:102	class:AbstractAccount
+get_balance	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def get_balance(self, symbol=None, refresh=False):$/;"	member	line:105	class:AbstractAccount
+lock_cash_for_order_if_required	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def lock_cash_for_order_if_required(self, event, order):$/;"	member	line:115	class:AbstractAccount
+update_after_order_rejected	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def update_after_order_rejected(self, event):$/;"	member	line:118	class:AbstractAccount
+update_after_order_filled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def update_after_order_filled(self, event):$/;"	member	line:121	class:AbstractAccount
+update_after_order_unfilled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def update_after_order_unfilled(self, event):$/;"	member	line:124	class:AbstractAccount
+assert_balance_matched	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def assert_balance_matched(self, *assets):$/;"	member	line:127	class:AbstractAccount
+_update_balance	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def _update_balance(self):$/;"	member	line:131	class:AbstractAccount
+update_after_order	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def update_after_order(self, _order_filled_event):$/;"	member	line:136	class:AbstractAccount
+math	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^import math$/;"	namespace	line:142
+SimulatedAccount	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^class SimulatedAccount(AbstractAccount):$/;"	class	line:143
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def __init__(self, *args, initial_balance={}, **kwargs):$/;"	member	line:144	class:SimulatedAccount
+assert_balance_matched	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def assert_balance_matched(self, *assets):$/;"	member	line:148	class:SimulatedAccount
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^                    from IPython import embed; embed()$/;"	namespace	line:161
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^                    from IPython import embed; embed()$/;"	namespace	line:161
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^                from IPython import embed; embed()$/;"	namespace	line:165
+embed	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^                from IPython import embed; embed()$/;"	namespace	line:165
+display_stats	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def display_stats(self):$/;"	member	line:169	class:SimulatedAccount
+_update_balance	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def _update_balance(self):$/;"	member	line:174	class:SimulatedAccount
+lock_cash_for_order_if_required	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def lock_cash_for_order_if_required(self, _event, order):$/;"	member	line:194	class:SimulatedAccount
+update_after_order_filled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def update_after_order_filled(self, event):$/;"	member	line:202	class:SimulatedAccount
+update_after_order_unfilled	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def update_after_order_unfilled(self, event):$/;"	member	line:219	class:SimulatedAccount
+update_after_order_rejected	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def update_after_order_rejected(self, event):$/;"	member	line:228	class:SimulatedAccount
+CcxtExchangeAccount	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^class CcxtExchangeAccount(AbstractAccount):$/;"	class	line:232
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def __init__(self, exchange, *args, params={}, **kwargs):$/;"	member	line:233	class:CcxtExchangeAccount
+_update_balance	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/account.py	/^    def _update_balance(self):$/;"	member	line:237	class:CcxtExchangeAccount
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^import pandas as pd$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^from ..core.object import Advice$/;"	namespace	line:4
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^from ..core.event import StrategyAdviceEvent$/;"	namespace	line:5
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^from ..core.utils import fast_xs$/;"	namespace	line:6
+BaseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^from .base import BaseStrategy$/;"	namespace	line:7
+BuyAndHoldStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^class BuyAndHoldStrategy(BaseStrategy):$/;"	class	line:10
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^    def __init__(self, lag=0):$/;"	member	line:27	class:BuyAndHoldStrategy
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^    def reset(self, context):$/;"	member	line:32	class:BuyAndHoldStrategy
+advice_investments_at_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/buy_and_hold.py	/^    def advice_investments_at_tick(self, tick_event):$/;"	member	line:39	class:BuyAndHoldStrategy
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^import pandas as pd$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^from ..core.object import Advice$/;"	namespace	line:4
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^from ..core.event import StrategyAdviceEvent$/;"	namespace	line:5
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^from ..core.utils import fast_xs$/;"	namespace	line:6
+BaseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^from .base import BaseStrategy$/;"	namespace	line:7
+RebalanceOnScoreStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^class RebalanceOnScoreStrategy(BaseStrategy):$/;"	class	line:10
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def __init__(self, rebalance=1, assets=3, max_assets=13,$/;"	member	line:15	class:RebalanceOnScoreStrategy
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def reset(self, context):$/;"	member	line:64	class:RebalanceOnScoreStrategy
+state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def state(self):$/;"	member	line:73	class:RebalanceOnScoreStrategy
+state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def state(self, val):$/;"	member	line:77	class:RebalanceOnScoreStrategy
+current_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def current_state(self):$/;"	member	line:81	class:RebalanceOnScoreStrategy
+_load_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def _load_state(self):$/;"	member	line:84	class:RebalanceOnScoreStrategy
+_save_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def _save_state(self, **data):$/;"	member	line:93	class:RebalanceOnScoreStrategy
+before_trading_start	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def before_trading_start(self):$/;"	member	line:103	class:RebalanceOnScoreStrategy
+transform_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def transform_history(self, panel):$/;"	member	line:136	class:RebalanceOnScoreStrategy
+order_percent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def order_percent(self, symbol, amount, price=None,$/;"	member	line:169	class:RebalanceOnScoreStrategy
+before_summary_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def before_summary_report(self):$/;"	member	line:198	class:RebalanceOnScoreStrategy
+increase_assets_if_required	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def increase_assets_if_required(self):$/;"	member	line:202	class:RebalanceOnScoreStrategy
+transform_order_calculation	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def transform_order_calculation(self, advice, cost, quantity, price):$/;"	member	line:218	class:RebalanceOnScoreStrategy
+selling_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def selling_price(self, _symbol, data):$/;"	member	line:254	class:RebalanceOnScoreStrategy
+buying_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def buying_price(self, _symbol, data):$/;"	member	line:263	class:RebalanceOnScoreStrategy
+transform_tick_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def transform_tick_data(self, data):$/;"	member	line:272	class:RebalanceOnScoreStrategy
+sorted_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def sorted_data(self, data):$/;"	member	line:295	class:RebalanceOnScoreStrategy
+rebalance_required	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def rebalance_required(self, data, selected, rejected):$/;"	member	line:309	class:RebalanceOnScoreStrategy
+selected_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def selected_assets(self, data):$/;"	member	line:341	class:RebalanceOnScoreStrategy
+rejected_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def rejected_assets(self, data):$/;"	member	line:362	class:RebalanceOnScoreStrategy
+assign_weights_and_required_equity	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def assign_weights_and_required_equity(self, data, selected):$/;"	member	line:381	class:RebalanceOnScoreStrategy
+calculate_weights_at_each_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def calculate_weights_at_each_tick(self, data):$/;"	member	line:400	class:RebalanceOnScoreStrategy
+advice_investments_at_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def advice_investments_at_tick(self, _tick_event):$/;"	member	line:418	class:RebalanceOnScoreStrategy
+after_order_created_done	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def after_order_created_done(self, event):$/;"	member	line:507	class:RebalanceOnScoreStrategy
+after_order_rejected	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score.py	/^    def after_order_rejected(self, event):$/;"	member	line:520	class:RebalanceOnScoreStrategy
+BaseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/__init__.py	/^from .base import BaseStrategy$/;"	namespace	line:1
+EwUCRPStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/__init__.py	/^from .ewucrp import EwUCRPStrategy$/;"	namespace	line:2
+BuyAndHoldStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/__init__.py	/^from .buy_and_hold import BuyAndHoldStrategy$/;"	namespace	line:3
+RebalanceOnScoreStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/__init__.py	/^from .rebalance_on_score import RebalanceOnScoreStrategy$/;"	namespace	line:4
+RebalanceOnScoreNseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/__init__.py	/^from .rebalance_on_score_nse import RebalanceOnScoreNseStrategy$/;"	namespace	line:5
+RebalanceOnScoreSplitOrders	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/__init__.py	/^from .rebalance_on_score_split_orders import RebalanceOnScoreSplitOrders$/;"	namespace	line:6
+RebalanceOnScoreSplitOrdersAggressiveBuySell	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/__init__.py	/^from .rebalance_on_score_split_orders_aggressive_buy_sell import RebalanceOnScoreSplitOrdersAggressiveBuySell$/;"	namespace	line:7
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^import pandas as pd$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^from ..core.object import Advice$/;"	namespace	line:4
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^from ..core.event import StrategyAdviceEvent$/;"	namespace	line:5
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^from ..core.utils import fast_xs$/;"	namespace	line:6
+BaseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^from .base import BaseStrategy$/;"	namespace	line:7
+RebalanceOnScoreLongShortStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^class RebalanceOnScoreLongShortStrategy(BaseStrategy):$/;"	class	line:10
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def __init__(self, rebalance=1, assets=None, max_assets=None,$/;"	member	line:15	class:RebalanceOnScoreLongShortStrategy
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def reset(self, context):$/;"	member	line:57	class:RebalanceOnScoreLongShortStrategy
+state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def state(self):$/;"	member	line:66	class:RebalanceOnScoreLongShortStrategy
+state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def state(self, val):$/;"	member	line:70	class:RebalanceOnScoreLongShortStrategy
+current_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def current_state(self):$/;"	member	line:74	class:RebalanceOnScoreLongShortStrategy
+_load_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def _load_state(self):$/;"	member	line:77	class:RebalanceOnScoreLongShortStrategy
+_save_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def _save_state(self, **data):$/;"	member	line:86	class:RebalanceOnScoreLongShortStrategy
+before_trading_start	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def before_trading_start(self):$/;"	member	line:96	class:RebalanceOnScoreLongShortStrategy
+transform_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def transform_history(self, panel):$/;"	member	line:131	class:RebalanceOnScoreLongShortStrategy
+order_percent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def order_percent(self, symbol, amount, price=None,$/;"	member	line:160	class:RebalanceOnScoreLongShortStrategy
+before_summary_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def before_summary_report(self):$/;"	member	line:187	class:RebalanceOnScoreLongShortStrategy
+transform_order_calculation	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def transform_order_calculation(self, advice, cost, quantity, price):$/;"	member	line:191	class:RebalanceOnScoreLongShortStrategy
+selling_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def selling_price(self, _symbol, data):$/;"	member	line:209	class:RebalanceOnScoreLongShortStrategy
+buying_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def buying_price(self, _symbol, data):$/;"	member	line:218	class:RebalanceOnScoreLongShortStrategy
+transform_tick_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def transform_tick_data(self, data):$/;"	member	line:227	class:RebalanceOnScoreLongShortStrategy
+sorted_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def sorted_data(self, data):$/;"	member	line:250	class:RebalanceOnScoreLongShortStrategy
+rebalance_required	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def rebalance_required(self, data):$/;"	member	line:264	class:RebalanceOnScoreLongShortStrategy
+selected_long_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def selected_long_assets(self, data):$/;"	member	line:296	class:RebalanceOnScoreLongShortStrategy
+selected_short_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def selected_short_assets(self, data):$/;"	member	line:317	class:RebalanceOnScoreLongShortStrategy
+assign_weights_and_required_equity	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def assign_weights_and_required_equity(self, data, selected_long, selected_short):$/;"	member	line:338	class:RebalanceOnScoreLongShortStrategy
+calculate_weights_at_each_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def calculate_weights_at_each_tick(self, data):$/;"	member	line:350	class:RebalanceOnScoreLongShortStrategy
+advice_investments_at_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def advice_investments_at_tick(self, _tick_event):$/;"	member	line:369	class:RebalanceOnScoreLongShortStrategy
+after_order_created_done	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def after_order_created_done(self, event):$/;"	member	line:454	class:RebalanceOnScoreLongShortStrategy
+after_order_rejected	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_long_short.py	/^    def after_order_rejected(self, event):$/;"	member	line:467	class:RebalanceOnScoreLongShortStrategy
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^import pandas as pd$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^from ..core.object import Advice$/;"	namespace	line:4
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^from ..core.event import StrategyAdviceEvent$/;"	namespace	line:5
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^from ..core.utils import fast_xs$/;"	namespace	line:6
+BaseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^from .base import BaseStrategy$/;"	namespace	line:7
+EwUCRPStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^class EwUCRPStrategy(BaseStrategy):$/;"	class	line:11
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^    def __init__(self, rebalance=1, max_order_size=None,$/;"	member	line:26	class:EwUCRPStrategy
+before_trading_start	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^    def before_trading_start(self):$/;"	member	line:35	class:EwUCRPStrategy
+transform_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^    def transform_history(self, panel):$/;"	member	line:38	class:EwUCRPStrategy
+rebalance_required	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^    def rebalance_required(self):$/;"	member	line:46	class:EwUCRPStrategy
+order_percent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^    def order_percent(self, symbol, amount, price=None, max_cost=None):$/;"	member	line:52	class:EwUCRPStrategy
+advice_investments_at_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/ewucrp.py	/^    def advice_investments_at_tick(self, tick_event):$/;"	member	line:62	class:EwUCRPStrategy
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^import pandas as pd$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^from ..core.object import Advice$/;"	namespace	line:4
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^from ..core.event import StrategyAdviceEvent$/;"	namespace	line:5
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^from ..core.utils import fast_xs$/;"	namespace	line:6
+BaseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^from .base import BaseStrategy$/;"	namespace	line:7
+RebalanceOnScoreNseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^class RebalanceOnScoreNseStrategy(BaseStrategy):$/;"	class	line:10
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def __init__(self, rebalance=1, assets=3, max_assets=13,$/;"	member	line:15	class:RebalanceOnScoreNseStrategy
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def reset(self, context):$/;"	member	line:54	class:RebalanceOnScoreNseStrategy
+state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def state(self):$/;"	member	line:63	class:RebalanceOnScoreNseStrategy
+state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def state(self, val):$/;"	member	line:67	class:RebalanceOnScoreNseStrategy
+current_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def current_state(self):$/;"	member	line:71	class:RebalanceOnScoreNseStrategy
+_load_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def _load_state(self):$/;"	member	line:74	class:RebalanceOnScoreNseStrategy
+_save_state	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def _save_state(self, **data):$/;"	member	line:83	class:RebalanceOnScoreNseStrategy
+before_trading_start	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def before_trading_start(self):$/;"	member	line:93	class:RebalanceOnScoreNseStrategy
+transform_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def transform_history(self, panel):$/;"	member	line:126	class:RebalanceOnScoreNseStrategy
+order_percent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def order_percent(self, symbol, amount, price=None,$/;"	member	line:155	class:RebalanceOnScoreNseStrategy
+before_summary_report	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def before_summary_report(self):$/;"	member	line:180	class:RebalanceOnScoreNseStrategy
+transform_order_calculation	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def transform_order_calculation(self, advice, cost, quantity, price):$/;"	member	line:184	class:RebalanceOnScoreNseStrategy
+exit_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def exit_price(self, asset, _symbol, data):$/;"	member	line:202	class:RebalanceOnScoreNseStrategy
+selling_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def selling_price(self, _symbol, data):$/;"	member	line:208	class:RebalanceOnScoreNseStrategy
+buying_price	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def buying_price(self, _symbol, data):$/;"	member	line:217	class:RebalanceOnScoreNseStrategy
+transform_tick_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def transform_tick_data(self, data):$/;"	member	line:226	class:RebalanceOnScoreNseStrategy
+sorted_data	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def sorted_data(self, data):$/;"	member	line:249	class:RebalanceOnScoreNseStrategy
+rebalance_required	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def rebalance_required(self, data):$/;"	member	line:263	class:RebalanceOnScoreNseStrategy
+selected_long_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def selected_long_assets(self, data):$/;"	member	line:295	class:RebalanceOnScoreNseStrategy
+selected_short_assets	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def selected_short_assets(self, data):$/;"	member	line:316	class:RebalanceOnScoreNseStrategy
+assign_weights_and_required_equity	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def assign_weights_and_required_equity(self, data, selected_long, selected_short):$/;"	member	line:337	class:RebalanceOnScoreNseStrategy
+calculate_weights_at_each_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def calculate_weights_at_each_tick(self, data):$/;"	member	line:350	class:RebalanceOnScoreNseStrategy
+advice_investments_at_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def advice_investments_at_tick(self, _tick_event):$/;"	member	line:369	class:RebalanceOnScoreNseStrategy
+after_order_created_done	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def after_order_created_done(self, event):$/;"	member	line:440	class:RebalanceOnScoreNseStrategy
+after_order_rejected	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_nse.py	/^    def after_order_rejected(self, event):$/;"	member	line:453	class:RebalanceOnScoreNseStrategy
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^import pandas as pd$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^from ..core.object import Advice$/;"	namespace	line:4
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^from ..core.event import StrategyAdviceEvent$/;"	namespace	line:5
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^from ..core.utils import fast_xs$/;"	namespace	line:6
+RebalanceOnScoreSplitOrders	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^from .rebalance_on_score_split_orders import RebalanceOnScoreSplitOrders$/;"	namespace	line:7
+RebalanceOnScoreSplitOrdersAggressiveBuySell	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):$/;"	class	line:10
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^    def __init__(self, *args, markdn_buy_func=None, markup_sell_func=None,$/;"	member	line:11	class:RebalanceOnScoreSplitOrdersAggressiveBuySell
+at_each_tick_end	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders_aggressive_buy_sell.py	/^    def at_each_tick_end(self):$/;"	member	line:25	class:RebalanceOnScoreSplitOrdersAggressiveBuySell
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^import pandas as pd$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^from ..core.object import Advice$/;"	namespace	line:4
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^from ..core.event import StrategyAdviceEvent$/;"	namespace	line:5
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^from ..core.utils import fast_xs$/;"	namespace	line:6
+BaseStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^class BaseStrategy(object):$/;"	class	line:9
+__metaclass__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    __metaclass__ = ABCMeta$/;"	variable	line:23	class:BaseStrategy
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def __init__(self):$/;"	member	line:25	class:BaseStrategy
+symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def symbols(self):$/;"	member	line:31	class:BaseStrategy
+symbols	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def symbols(self, arr=[]):$/;"	member	line:35	class:BaseStrategy
+transform_history	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def transform_history(self, panel):$/;"	member	line:38	class:BaseStrategy
+reset	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def reset(self, context):$/;"	member	line:43	class:BaseStrategy
+account	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def account(self):$/;"	member	line:49	class:BaseStrategy
+broker	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def broker(self):$/;"	member	line:53	class:BaseStrategy
+portfolio	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def portfolio(self):$/;"	member	line:57	class:BaseStrategy
+reporters	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def reporters(self):$/;"	member	line:61	class:BaseStrategy
+benchmarks	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def benchmarks(self):$/;"	member	line:65	class:BaseStrategy
+datacenter	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def datacenter(self):$/;"	member	line:69	class:BaseStrategy
+events	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def events(self):$/;"	member	line:73	class:BaseStrategy
+current_time	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def current_time(self):$/;"	member	line:77	class:BaseStrategy
+log	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def log(self, *args, **kwargs):$/;"	member	line:80	class:BaseStrategy
+notify	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def notify(self, *args, **kwargs):$/;"	member	line:83	class:BaseStrategy
+advice_investments_at_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def advice_investments_at_tick(self, _tick_event):$/;"	member	line:87	class:BaseStrategy
+_order_target	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def _order_target(self, symbol, quantity, quantity_type,$/;"	member	line:92	class:BaseStrategy
+order_relative_target_percent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def order_relative_target_percent(self, symbol, quantity, order_type='MARKET',$/;"	member	line:115	class:BaseStrategy
+order_target_percent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def order_target_percent(self, symbol, quantity, order_type='MARKET',$/;"	member	line:121	class:BaseStrategy
+order_target_amount	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/base.py	/^    def order_target_amount(self, symbol, quantity, order_type='MARKET',$/;"	member	line:126	class:BaseStrategy
+np	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^import numpy as np$/;"	namespace	line:1
+pd	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^import pandas as pd$/;"	namespace	line:2
+ABCMeta	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+abstractmethod	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^from abc import ABCMeta, abstractmethod$/;"	namespace	line:3
+Advice	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^from ..core.object import Advice$/;"	namespace	line:4
+StrategyAdviceEvent	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^from ..core.event import StrategyAdviceEvent$/;"	namespace	line:5
+fast_xs	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^from ..core.utils import fast_xs$/;"	namespace	line:6
+RebalanceOnScoreStrategy	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^from .rebalance_on_score import RebalanceOnScoreStrategy$/;"	namespace	line:7
+RebalanceOnScoreSplitOrders	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):$/;"	class	line:10
+__init__	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^    def __init__(self, *args, **kwargs):$/;"	member	line:11	class:RebalanceOnScoreSplitOrders
+selling_prices	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^    def selling_prices(self, _symbol, data):$/;"	member	line:16	class:RebalanceOnScoreSplitOrders
+buying_prices	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^    def buying_prices(self, _symbol, data):$/;"	member	line:23	class:RebalanceOnScoreSplitOrders
+advice_investments_at_tick	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^    def advice_investments_at_tick(self, _tick_event):$/;"	member	line:30	class:RebalanceOnScoreSplitOrders
+transform_order_calculation	/Users/nikhgupta/Code/cryptosphere/backfolio/backfolio/strategy/rebalance_on_score_split_orders.py	/^    def transform_order_calculation(self, advice, cost, quantity, price):$/;"	member	line:137	class:RebalanceOnScoreSplitOrders

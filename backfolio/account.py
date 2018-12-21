@@ -25,6 +25,7 @@ class AbstractAccount(object):
         self.initial_capital = initial_capital
         self._extra_capital = None
         self.session_fields = []
+        self.lender = {}
 
     def __repr__(self):
         bal = dict([key, val] for key, val in self.total.items() if val > 0)
@@ -38,6 +39,7 @@ class AbstractAccount(object):
         self.total = {}
         self.last_update_at = None
         self.get_balance(refresh=True)
+        self.lender = {k: 0 for k, v in self.total.items()}
         return self
 
     def _adjust_for_extra_capital(self):
@@ -59,6 +61,8 @@ class AbstractAccount(object):
         if (not self.free or not self.context.backtesting()):
             self._update_balance()
         cash = self.free[self.context.base_currency]
+        # if self.equity and self.equity > 0:
+        #     cash = min(self.equity, cash)
         self._adjust_for_extra_capital()
         return cash - self._extra_capital if self._extra_capital else cash
 
