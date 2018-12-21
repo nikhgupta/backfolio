@@ -39,7 +39,7 @@ class Advice:
         self.id = id if id else generate_id('advice', self)
         self.time = time
         self.max_cost = max_cost
-        self.side = side
+        self._side = side
         self.position = position
         self._symbol = None
 
@@ -60,6 +60,14 @@ class Advice:
     def id(self, val):
         self._id = val
         self.__class__._ids.append(val)
+
+    @property
+    def side(self):
+        return self._side
+
+    @side.setter
+    def side(self, val):
+        self._side = val
 
     @property
     def max_order_size(self):
@@ -173,7 +181,8 @@ class Order:
         if self.advice.side and self.advice.side in ["BUY", "SELL"]:
             return self.advice.side
         else:
-            return 'BUY' if self.quantity > 0 else 'SELL'
+            side = "BUY" if self.quantity > 0 else "SELL"
+            return side
 
     @side.setter
     def side(self, val):
@@ -228,11 +237,11 @@ class Order:
 
     @property
     def is_buy(self):
-        return self.quantity > 0
+        return self.side == "BUY"
 
     @property
     def is_sell(self):
-        return self.quantity < 0
+        return self.side == "SELL"
 
     @property
     def is_open(self):
@@ -305,6 +314,7 @@ class Order:
 class OrderGroup:
     def __init__(self, order, local_id=0):
         self.asset = order.asset
+        self.base = order.base
         self._local_id = local_id if local_id else generate_id('ogroup', self)
         self.orders = [order]
         self.status = 'OPEN'
@@ -325,7 +335,8 @@ class OrderGroup:
 
     @classmethod
     def add_order_to_groups(cls, order, groups):
-        matched = [og for og in groups if og.asset == order.asset]
+        matched = [og for og in groups
+                   if og.asset == order.asset and og.base == order.base]
         if not matched:
             groups.append(cls(order))
         else:
@@ -369,7 +380,7 @@ class OrderGroup:
 
     def add_order(self, order):
         self.orders.append(order)
-        if order.asset != self.asset:
+        if order.asset != self.asset or order.base != self.base:
             raise ValueError("Invalid order being added to group: %s" % order)
         if order.is_buy:
             self.buy_quantity += order.quantity

@@ -11,10 +11,17 @@ import pyprind
 import requests
 import numpy as np
 import pandas as pd
+
 try:
     import quandl
 except ModuleNotFoundError:
-    pass
+    print("QuandlDatacenter will not work. Library missing!")
+
+try:
+    from nsetools import Nse
+    from yahoofinancials import YahooFinancials
+except:
+    print("NseDatacenter will not work. Library missing!")
 
 from zipfile import ZipFile
 from abc import ABCMeta, abstractmethod
@@ -47,13 +54,14 @@ class BaseDatacenter(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, timeframe='1d', fill=True, resample=None):
+    def __init__(self, timeframe='1d', fill=True, realign=True, resample=None):
         self._name = 'base_datacenter'
         self._selected_symbols = []
         self.timeframe = timeframe
         self.session_fields = []
         self.fill = fill
         self.resample = resample
+        self.realign = realign
 
     def reset(self, context=None, root_dir=None):
         """ Routine to run when trading session is resetted. """
@@ -257,18 +265,25 @@ class BaseDatacenter(object):
         return df
 
     def _sanitize_ohlcv(self, df):
-        df = self._sanitize_index(df)
-        df['volume'] = np.where(df['volume'] > MAXINT, MAXINT, df['volume'])
-        if self.fill:
+        if df.empty:
+            return df
+
+        if self.realign:
             freq = self.timeframe.replace('m', 'T')
             df = df.groupby(pd.Grouper(freq=freq)).last()
+        if self.fill:
             df['volume'] = df['volume'].fillna(0.0)
             df['close'] = df['close'].fillna(method='pad')
             df['open'] = df['open'].fillna(df['close'])
             df['low'] = df['low'].fillna(df['close'])
             df['high'] = df['high'].fillna(df['close'])
+            if 'realclose' in df.columns:
+                df['realclose'] = df['realclose'].fillna(method='pad')
+            if 'realopen' in df.columns:
+                df['realopen'] = df['realopen'].fillna(method='pad')
         df['dividend'] = 0
         df['split'] = 1
+        df['volume'] = np.where(df['volume'] > MAXINT, MAXINT, df['volume'])
         if self.resample:
             df = df.resample(self.resample).agg({
                 "open": 'first', 'high': 'max',
@@ -278,7 +293,7 @@ class BaseDatacenter(object):
         return df
 
     def _cleanup_and_save_symbol_data(self, symbol, df):
-        df = self._sanitize_ohlcv(df)
+        df = self._sanitize_index(df)
         # save newly reloaded data to disk
         path = join(self.data_dir, "%s.csv" % symbol.replace("/", "_"))
         df.dropna().reset_index().to_csv(path, index=False)
@@ -337,7 +352,9 @@ class BaseDatacenter(object):
                                   for symbol %s:\n%s" % (symbol, str(e)))
                 cdf = None
 
-            if cdf is not None:
+            if cdf is not None and cdf.empty:
+                print("No data loaded for %s" % symbol)
+            elif cdf is not None:
                 histories[symbol] = cdf
 
         # finally, save the data so obtained as a panel for quick ref.
@@ -346,17 +363,32 @@ class BaseDatacenter(object):
             if symbol not in self.markets:
                 continue
             self._all_data[sym] = self._sanitize_ohlcv(df)
-        self._all_data = pd.Panel(self._all_data)
+        df = pd.Panel(self._all_data)
+        if self.fill:
+            df.loc[:, :, 'volume'] = df[:, :, 'volume'].fillna(0.0)
+            df.loc[:, :, 'close'] = df[:, :, 'close'].fillna(method='pad')
+            df.loc[:, :, 'open'] = df[:, :, 'open'].fillna(df[:, :, 'close'])
+            df.loc[:, :, 'low'] = df[:, :, 'low'].fillna(df[:, :, 'close'])
+            df.loc[:, :, 'high'] = df[:, :, 'high'].fillna(df[:, :, 'close'])
+            if 'realclose' in df.axes[2]:
+                df.loc[:, :, 'realclose'] = df[:, :,'realclose'].fillna(method='pad')
+            if 'realopen' in df.axes[2]:
+                df.loc[:, :, 'realopen'] = df[:, :,'realopen'].fillna(method='pad')
+
+        self._all_data = df
 
 
 class CryptocurrencyDatacenter(BaseDatacenter):
     def __init__(self, exchange, *args,
-                 to_sym='BTC', limit=10000, params={}, **kwargs):
+                 to_sym='BTC', limit=100000, per_page_limit=1000,
+                 start_since=None, params={}, **kwargs):
         super().__init__(*args, **kwargs)
         self.to_sym = to_sym
         self.exchange = getattr(ccxt, exchange)(params)
         self.history_limit = limit
+        self.per_page_limit = per_page_limit
         self._market_data = {}
+        self.start_since = start_since*1000 if start_since else None
 
         if not self.exchange.has['fetchOHLCV']:
             raise NotImplementedError(
@@ -403,7 +435,10 @@ class CryptocurrencyDatacenter(BaseDatacenter):
     def refresh_history_for_symbol(self, symbol, cdf=None):
         """ Refresh history for a given asset from exchange """
         plen = 0
-        last_timestamp = None
+        if self.start_since is not None:
+            last_timestamp = int(datetime.now().timestamp()*1000) - self.start_since
+        else:
+            last_timestamp = None
         col_list = ['time', 'open', 'high', 'low', 'close', 'volume']
         if cdf is None:
             cdf = pd.DataFrame(columns=col_list).set_index('time')
@@ -411,7 +446,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         while True:
             data = self.exchange.fetch_ohlcv(
                 symbol, timeframe=self.timeframe,
-                since=last_timestamp, limit=self.history_limit)
+                since=last_timestamp, limit=self.per_page_limit)
 
             df = pd.DataFrame(data, columns=col_list)
             df['time'] = pd.to_datetime(df['time'], unit='ms')
@@ -426,7 +461,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
 
             plen = len(cdf)
             last_timestamp = int((cdf.index[0] - pd.to_timedelta(
-                 len(data) * self.timeframe)).timestamp())*1000
+                 self.per_page_limit * self.timeframe)).timestamp())*1000
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
 

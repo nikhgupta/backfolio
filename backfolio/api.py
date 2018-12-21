@@ -9,10 +9,11 @@ import matplotlib.pyplot as plt
 from .portfolio import BasePortfolio
 from .account import SimulatedAccount, CcxtExchangeAccount
 from .trading_session import BacktestSession, LiveTradingSession
+from .datacenter import *
 from .datacenter import CryptocurrencyDatacenter as CryptoDC
 from .broker import SimulatedBroker, CcxtExchangeBroker
 from .notifier import FileLogger, SlackNotifier
-from .benchmark import SymbolAsBenchmark, CryptoMarketCapAsBenchmark
+from .benchmark import *
 from .core.utils import fast_xs
 from .reporter import (
     BaseReporter,
@@ -21,7 +22,7 @@ from .reporter import (
 )
 
 
-def ccxt_backtest(strat, start_time=None, end_time=None,
+def ccxt_backtest(strat, start_time=None, end_time=None, daily=True,
                   timeframe='1h', exchange='bittrex', resample=None,
                   refresh=False, slippage=True, run=True,
                   balance={"BTC": 1}, initial_capital=None, commission=0.25,
@@ -43,7 +44,7 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
         OrdersReporter(),
         CashAndEquityReporter(bounds=False, mean=True, plot=plots, period=24*7,
                               log_axis=False, each_tick=each_tick),
-        BaseReporter(log_axis=log_axis, daily=False,
+        BaseReporter(log_axis=log_axis, daily=daily,
                      plot=plots, doprint=False)]
 
     if benchmarks:

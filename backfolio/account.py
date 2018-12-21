@@ -120,6 +120,9 @@ class AbstractAccount(object):
     def update_after_order_unfilled(self, event):
         pass
 
+    def assert_balance_matched(self, *assets):
+        pass
+
     @abstractmethod
     def _update_balance(self):
         """ Refresh/update account balance """
@@ -153,6 +156,11 @@ class SimulatedAccount(AbstractAccount):
                     print("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
                     from IPython import embed; embed()
                     return False
+            elif expected <= -1e-8:
+                print("Found negative balance for %s: %s" % (asset, expected))
+                from IPython import embed; embed()
+                return False
+
 
     def display_stats(self):
         print("Free:   %s" % {k: v for k,v in self.free.items()   if v > 0})

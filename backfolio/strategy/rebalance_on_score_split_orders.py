@@ -8,6 +8,11 @@ from .rebalance_on_score import RebalanceOnScoreStrategy
 
 
 class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
+    def __init__(self, *args, **kwargs):
+        defaults = {"markdn_buy": [0.9,1.1,1], "markup_sell": [1.1,0.9,1]}
+        kwargs = {**defaults, **kwargs}
+        super().__init__(*args, **kwargs)
+
     def selling_prices(self, _symbol, data):
         if self.markup_sell is not None:
             price = data['price'] if 'price' in data else data['close']

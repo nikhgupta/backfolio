@@ -471,7 +471,7 @@ class TradingSession:
             counter += 1
             # remove asset from open orders directly
             for order in self.portfolio.open_orders:
-                if order.asset == asset:
+                if hasattr(order, 'asset') and order.asset == asset:
                     self.portfolio.open_orders.remove(order)
             check1 = asset not in [x.asset for x in self.portfolio.open_orders]
 

@@ -228,8 +228,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         Do NOT set price for MARKET orders.
         You can return `(0, 0, 0)` to not place this order.
         """
-        if cost > 0 and cost >= self.account.cash * 0.95:
-            cost = self.account.cash * 0.95
+        if cost > 0 and cost >= self.account.free[advice.base] * 0.95:
+            cost = self.account.free[advice.base] * 0.95
 
         # if the equity vs quantity calculation, messes up our
         # ordering side, ensure that we still rebalance, but
@@ -387,10 +387,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         current_comm_equity = asset_equity[self.context.commission_asset]
         if current_comm_equity < required_comm_equity:
             data['weight'] *= 1 - comm_percent
-
-        data['required_equity'] = data['weight'] * self.account.equity
         if self.reserved_cash:
-            data["required_equity"] *= (1-self.reserved_cash/100)
+            data["weight"] *= (1-self.reserved_cash/100)
+        data['required_equity'] = data['weight'] * self.account.equity
         return data
 
     def calculate_weights_at_each_tick(self, data):

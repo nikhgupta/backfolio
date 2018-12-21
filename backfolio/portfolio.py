@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import pandas as pd
-from os.path import join
+from os.path import join, dirname
 
 from .core.object import OrderGroup
 from .core.event import OrderRequestedEvent
@@ -92,7 +92,7 @@ class BasePortfolio(object):
         elif len(self.timeline):
             equity = self.timeline[-1]['equity']
         else:
-            equity = np.nan
+            raise ValueError("Not sure how to calculate equity here. Data missing?")
         if hasattr(self.strategy, 'transform_account_equity'):
             equity = self.strategy.transform_account_equity(equity)
         return equity
@@ -148,8 +148,11 @@ class BasePortfolio(object):
                 price = fast_xs(data.fillna(0), symbol)[field]
                 resp['asset_equity'][asset] = quantity * price
             elif self.is_holding_delisted_asset(asset, symbol) and len(self.asset_equity):
-                last_equity = self.equity_per_asset[asset]
-                self.context.delist_asset(asset, last_equity)
+                if self.context.live_trading():
+                    last_equity = 0
+                else:
+                    last_equity = self.equity_per_asset[asset]
+                    self.context.delist_asset(asset, last_equity)
                 resp['asset_equity'][asset] = last_equity
             elif len(self.asset_equity) and asset in self.delisted_assets:
                 resp['asset_equity'][asset] = 0
@@ -158,6 +161,7 @@ class BasePortfolio(object):
             elif len(self.asset_equity):
                 print("!!!! NOT SURE WHAT TO DO - ASSET's VALUE COULD NOT BE DETERMINED (in portfolio.py)")
                 from IPython import embed; embed()
+                raise "asset's value could not be determined."
             else:
                 resp['asset_equity'][asset] = 0
 
@@ -175,6 +179,8 @@ class BasePortfolio(object):
             return False
         if not symbol:
             symbol = self.datacenter.assets_to_symbol(asset)
+        if symbol not in self.datacenter.history.axes[0]:
+            return True
         history = self.datacenter.history[symbol]
         history = history[self.context.current_time.strftime("%Y-%m-%d %H:%M"):]
         without_history = history.dropna(how='all').empty
@@ -270,8 +276,9 @@ class BasePortfolio(object):
 
         self._converted_to_pandas = True
 
-    def save_as_benchmark(self, cache_name):
+    def save_as_benchmark(self, *args):
         data_dir = join(self.context.root_dir, "benchmarks")
+        cache_name = "/".join(args)
         cache = join(data_dir, "%s.csv" % cache_name)
-        make_path(data_dir)
+        make_path(dirname(cache))
         self.timeline.to_csv(cache, index=True)
