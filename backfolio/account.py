@@ -124,6 +124,9 @@ class AbstractAccount(object):
     def update_after_order_unfilled(self, event):
         pass
 
+    def assert_balance_matched(self, *assets):
+        pass
+
     @abstractmethod
     def _update_balance(self):
         """ Refresh/update account balance """

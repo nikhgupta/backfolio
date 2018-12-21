@@ -148,8 +148,11 @@ class BasePortfolio(object):
                 price = fast_xs(data.fillna(0), symbol)[field]
                 resp['asset_equity'][asset] = quantity * price
             elif self.is_holding_delisted_asset(asset, symbol) and len(self.asset_equity):
-                last_equity = self.equity_per_asset[asset]
-                self.context.delist_asset(asset, last_equity)
+                if self.context.live_trading():
+                    last_equity = 0
+                else:
+                    last_equity = self.equity_per_asset[asset]
+                    self.context.delist_asset(asset, last_equity)
                 resp['asset_equity'][asset] = last_equity
             elif len(self.asset_equity) and asset in self.delisted_assets:
                 resp['asset_equity'][asset] = 0
@@ -176,6 +179,8 @@ class BasePortfolio(object):
             return False
         if not symbol:
             symbol = self.datacenter.assets_to_symbol(asset)
+        if symbol not in self.datacenter.history.axes[0]:
+            return True
         history = self.datacenter.history[symbol]
         history = history[self.context.current_time.strftime("%Y-%m-%d %H:%M"):]
         without_history = history.dropna(how='all').empty

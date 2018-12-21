@@ -38,7 +38,7 @@ def make_path(path):
     pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def load_df(path, name, container, field, array=True):
+def load_df(path, name, container, field, array=True, limit=None):
     """ Load a dataframe of records into an array of dict from a given path,
     and set it as an attribute on container """
     path = join(path, "%s.csv" % name)
@@ -51,6 +51,8 @@ def load_df(path, name, container, field, array=True):
                 if not data.empty:
                     data = data[~data.duplicated(keep='last')]
                 data = data.to_dict(orient='records')
+                if limit is not None and len(data) > limit:
+                    data = data[-limit:]
                 if data and 'kind' in data[0]:
                     module = importlib.import_module('..object', __name__)
                     cls = getattr(module, data[0]['kind'])
