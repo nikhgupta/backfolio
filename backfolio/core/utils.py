@@ -104,3 +104,12 @@ def generate_id(name, inst, length=16):
     while not str or str in inst._ids:
         str = ''.join([choice(set) for _ in range(length)])
     return str
+
+
+def comp8(p1, p2, delta=0):
+    p1, p2 = round(p1, 8), round(p2, 8)
+    if p1 > p2 + delta:
+        return 1
+    if p1 < p2 - delta:
+        return -1
+    return 0

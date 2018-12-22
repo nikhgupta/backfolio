@@ -2,7 +2,7 @@ import ccxt
 from math import isnan
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
-from .core.utils import fast_xs
+from .core.utils import fast_xs, comp8
 from .core.object import Order
 from ccxt.base.errors import InsufficientFunds, OrderNotFound
 
@@ -172,7 +172,9 @@ class SimulatedBroker(AbstractBroker):
         symbol_data = None
         pbase = self.context.base_currency
         base_rate = 1 if order.base == pbase else self.get_asset_rate(order.base)
+        tx_asset = order.base if order.is_buy else order.asset
         cash, cost = self.account.free[order.base], order.order_cost
+        asset_pos = self.account.free[order.asset]
 
         if symbol in self.datacenter._current_real.index:
             symbol_data = fast_xs(self.datacenter._current_real, symbol)
@@ -183,24 +185,42 @@ class SimulatedBroker(AbstractBroker):
         # elif cash < 1e-8 and order.base == self.context.base_currency:
         #     order.mark_rejected(self, 'Cash depleted')
         #     # self.datacenter._continue_backtest = False
-        elif cost >= cash and not pending:
+        elif order.is_buy and comp8(cost, cash) > 0 and not pending:
             order.mark_rejected(
                 self,
-                'Insufficient Cash: %0.8f (cost) vs %0.8f (cash)' % (
+                'Insufficient Base Asset: %0.8f (cost) vs %0.8f (cash)' % (
                     cost, cash))
-        elif ((comm > comm_asset_balance or comm_asset_balance < 0) and
+        elif (order.is_sell and comp8(abs(order.quantity), asset_pos) > 0 and
                 not pending):
+            order.mark_rejected(
+                self,
+                'Insufficient Tx Asset: %0.8f (quantity) vs %0.8f (available)'
+                % (abs(order.quantity), asset_pos))
+        elif (order.is_sell and order.asset == order.commission_asset and
+                comp8(comm + abs(order.quantity), comm_asset_balance) > 0):
+            order.mark_rejected(
+                self,
+                'Insufficient Brokerage: %0.8f (comm) vs %0.8f (asset bal)' % (
+                    comm, comm_asset_balance - abs(order.quantity)))
+        elif (order.is_buy and order.base == order.commission_asset and
+                comp8(comm + abs(order.quantity), comm_asset_balance) > 0):
+            order.mark_rejected(
+                self,
+                'Insufficient Brokerage: %0.8f (comm) vs %0.8f (asset bal)' % (
+                    comm, comm_asset_balance - abs(order.quantity)))
+        elif ((comp8(comm, comm_asset_balance) > 0 or
+                comm_asset_balance < 0) and not pending):
             order.mark_rejected(
                 self,
                 'Insufficient Brokerage: %0.8f (comm) vs %0.8f (asset bal)' % (
                     comm, comm_asset_balance))
         elif (order.commission_asset == self.context.base_currency and
-                comm > self.account.cash):
+                comp8(comm, self.account.cash) > 0):
             order.mark_rejected(
                 self,
                 'Insufficient Cash: %0.8f (comm) vs %0.8f (asset bal)' % (
                     comm, self.account.cash))
-        elif abs(cost)*base_rate < self.min_order_size:
+        elif comp8(abs(cost)*base_rate, self.min_order_size) < 0:
             return
             # order.mark_rejected(self, track=False)
         elif order.is_open and order.is_buy and order.quantity < 0:

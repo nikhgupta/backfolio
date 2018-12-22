@@ -37,7 +37,7 @@ class BaseStrategy(object):
 
     def transform_history(self, panel):
         if self.symbols:
-            panel = panel[self.symbols].dropna(how='any')
+            panel = panel[self.symbols].dropna(how='all')
         return panel
 
     def reset(self, context):

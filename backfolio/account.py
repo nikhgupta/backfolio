@@ -156,16 +156,16 @@ class SimulatedAccount(AbstractAccount):
                     print("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
                     from IPython import embed; embed()
                     return False
-            elif expected <= -1e-8:
+            elif expected <= -1e-6:
                 print("Found negative balance for %s: %s" % (asset, expected))
                 from IPython import embed; embed()
                 return False
 
 
     def display_stats(self):
-        print("Free:   %s" % {k: v for k,v in self.free.items()   if v > 0})
-        print("Total:  %s" % {k: v for k,v in self.total.items()  if v > 0})
-        print("Locked: %s" % {k: v for k,v in self.locked.items() if v > 0})
+        print("Free:   %s" % {k: v for k,v in self.free.items()   if abs(v) >= 1e-8})
+        print("Total:  %s" % {k: v for k,v in self.total.items()  if abs(v) >= 1e-8})
+        print("Locked: %s" % {k: v for k,v in self.locked.items() if abs(v) >= 1e-8})
 
     def _update_balance(self):
         if self.free:
