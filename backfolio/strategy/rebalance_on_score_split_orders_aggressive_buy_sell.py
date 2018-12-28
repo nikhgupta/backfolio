@@ -60,26 +60,29 @@ class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):
         if reprocess:
             self.already_sell += 1
 
-        rem = self.account.free['BTC']/self.account.equity*100*0.95
+        act_eq = self.account.equity*(1-self.min_commission_asset_equity/100)
+        rem = self.account.free[self.context.base_currency]/act_eq*100
+        comm_eq = self.portfolio.equity_per_asset[self.context.commission_asset]
+        min_comm = self.account.equity/100*self.min_commission_asset_equity
         if rem > 1 and self.already_buy < 10:
-            symbols = self.data.sort_values(by='score', ascending=False)
-            if len(symbols) == 0:
-                if not reprocess:
-                    reprocess = False
-                pass
-
-            orig = self.markdn_buy
-            self.markdn_buy = [self.markdn_buy_func(curr, self.already_buy)
-                               for curr in orig]
-            for symbol in symbols.index[0:3]:
-                asset_data = fast_xs(self.data, symbol)
-                prices = self.buying_prices(symbol, asset_data)
-                # print("BUYing %s at %s markdn" % (symbol, self.markdn_buy))
-                for price in prices:
-                    self.order_percent(symbol, rem/(3*len(prices)), price, side='BUY', relative=True)
-            self.already_buy += 1
-            self.markdn_buy = orig
-            reprocess = True
+            if comm_eq > min_comm/2:
+                symbols = self.data.sort_values(by='score', ascending=False)
+                if len(symbols) == 0:
+                    if not reprocess:
+                        reprocess = False
+                else:
+                    orig = self.markdn_buy
+                    self.markdn_buy = [self.markdn_buy_func(curr, self.already_buy)
+                                    for curr in orig]
+                    for symbol in symbols.index[0:3]:
+                        asset_data = fast_xs(self.data, symbol)
+                        prices = self.buying_prices(symbol, asset_data)
+                        # print("BUYing %s at %s markdn" % (symbol, self.markdn_buy))
+                        for price in prices:
+                            self.order_percent(symbol, rem/(3*len(prices)), price, side='BUY', relative=True)
+                    self.already_buy += 1
+                    self.markdn_buy = orig
+                    reprocess = True
 
         if reprocess:
             return False

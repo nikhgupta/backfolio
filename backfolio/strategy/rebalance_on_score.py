@@ -228,8 +228,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         Do NOT set price for MARKET orders.
         You can return `(0, 0, 0)` to not place this order.
         """
-        if cost > 0 and cost >= self.account.free[advice.base] * 0.95:
-            cost = self.account.free[advice.base] * 0.95
+        n = (1-self.min_commission_asset_equity/100)
+        if cost > 0 and cost > self.account.free[advice.base] * n:
+            cost = self.account.free[advice.base] * n
 
         # if the equity vs quantity calculation, messes up our
         # ordering side, ensure that we still rebalance, but
@@ -439,13 +440,17 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             self._symbols = {asset: self.datacenter.assets_to_symbol(asset)
                              for asset, _ in equity.items()}
 
-        min_comm = self.min_commission_asset_equity/100*self.account.equity
 
         # if we need to wait for rebalancing, do nothing.
         if self.rebalance_required(data, selected, rejected):
             self.broker.cancel_pending_orders()
         elif self.rebalance:
             return
+
+        min_comm = self.min_commission_asset_equity
+        comm_sym = self._symbols[self.context.commission_asset]
+        if equity[comm_sym] < min_comm/100*self.account.equity:
+            self.order_percent(comm_sym, min_comm, side='BUY')
 
         # first sell everything that is not in selected coins,
         # provided they are worth atleast 1% above the threshold.
@@ -461,9 +466,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 n, price = 0, self.selling_price(symbol, asset_data)
                 if asset == self.context.commission_asset:
                     n = self.min_commission_asset_equity
-                    price = asset_data['close']
-                # order can be placed on any side - we dont care due to amount
-                self.order_percent(symbol, n, price)
+                    self.order_percent(symbol, n, price, side='SELL')
+                else:
+                    self.order_percent(symbol, n, price)
 
         # next, sell assets that have higher equity first
         for asset, asset_equity in equity.items():

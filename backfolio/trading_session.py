@@ -40,6 +40,7 @@ class TradingSession:
         self._start_time = None
         self._end_time = None
         self._current_time = None
+        self._consider_limit_filled_on_touch = False
 
     @property
     def mode(self):
@@ -120,6 +121,14 @@ class TradingSession:
     @slippage.setter
     def slippage(self, slippage_fn):
         self._slippage = slippage_fn
+
+    @property
+    def consider_limit_filled_on_touch(self):
+        return self._consider_limit_filled_on_touch
+
+    @consider_limit_filled_on_touch.setter
+    def consider_limit_filled_on_touch(self, val):
+        self._consider_limit_filled_on_touch = val
 
     @property
     def broker(self):

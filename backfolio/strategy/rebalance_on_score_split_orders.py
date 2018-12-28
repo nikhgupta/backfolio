@@ -56,13 +56,16 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
             self._symbols = {asset: self.datacenter.assets_to_symbol(asset)
                              for asset, _ in equity.items()}
 
-        min_comm = self.min_commission_asset_equity/100*self.account.equity
-
         # if we need to wait for rebalancing, do nothing.
         if self.rebalance_required(data, selected, rejected):
             self.broker.cancel_pending_orders()
         elif self.rebalance:
             return
+
+        min_comm = self.min_commission_asset_equity
+        comm_sym = self._symbols[self.context.commission_asset]
+        if equity[self.context.commission_asset] < min_comm/100*self.account.equity:
+            self.order_percent(comm_sym, min_comm, side='BUY')
 
         # first sell everything that is not in selected coins,
         # provided they are worth atleast 1% above the threshold.
@@ -79,16 +82,13 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                     N = asset_equity/self.account.equity*100
                     if asset == self.context.commission_asset:
                         n = self.min_commission_asset_equity
-                        prices = [asset_data['close']]
-
                     for price in prices:
                         x = (n-N)/len(prices)
-                        #print("MSELL: ", asset, x, n, N, price)
-                        self.order_percent(symbol, x, price, relative=True)
+                        self.order_percent(symbol, x, price, relative=True, side='SELL')
                 elif asset_equity > asset_data['required_equity']/100 and asset_equity > 1e-3:
                     n, prices = 0, self.selling_prices(symbol, asset_data)
                     if asset != self.context.commission_asset:
-                        self.order_percent(symbol, 0, prices[-1])
+                        self.order_percent(symbol, 0, prices[-1], side='SELL')
 
         # next, sell assets that have higher equity first
         for asset, asset_equity in equity.items():
@@ -104,7 +104,6 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                     n = max(self.min_commission_asset_equity, n)
                 for price in prices:
                     x = (n-N)/len(prices)
-                    #print("SELL: ", asset, x, n, N, price)
                     self.order_percent(symbol, x, price, side='SELL', relative=True)
 
         # finally, buy assets that have lower equity now
@@ -146,8 +145,9 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
         Do NOT set price for MARKET orders.
         You can return `(0, 0, 0)` to not place this order.
         """
-        if cost > 0 and cost >= self.account.cash * 0.95:
-            cost = self.account.cash * 0.95
+        n = (1-self.min_commission_asset_equity/100)
+        if cost > 0 and cost > self.account.free[advice.base] * n:
+            cost = self.account.free[advice.base] * n
 
         # if the equity vs quantity calculation, messes up our
         # ordering side, ensure that we still rebalance, but

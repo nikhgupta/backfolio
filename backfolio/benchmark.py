@@ -4,6 +4,7 @@ from copy import deepcopy
 from abc import ABCMeta, abstractmethod
 from os.path import join, isfile
 from .core.utils import make_path
+import json, hashlib
 
 
 class BaseBenchmark(object):
@@ -136,6 +137,35 @@ class SymbolAsBenchmark(BaseBenchmark):
 
     def _returns_data(self):
         return self.datacenter.refresh_history_for_symbol(self.symbol)
+
+
+class PortfolioAsBenchmark(BaseBenchmark):
+    def __init__(self, mapping={}, cache_name=None):
+        if not cache_name:
+            j = json.dumps(mapping, sort_keys=True).encode('utf-8')
+            cache_name = 'portfolio-%s' % hashlib.md5(j).hexdigest()[:12]
+        super().__init__(cache_name, cache_name)
+        self.mapping = mapping
+
+    def _returns_data(self):
+        syms = list(self.mapping.keys())
+        if len(syms) > 0:
+            ch = self.datacenter.history[syms, :, 'close'].pct_change()
+        else:
+            ch = self.datacenter.history[:, :, 'close'].pct_change()
+        if self.context.start_time:
+            ch = ch[self.context.start_time:]
+        if self.context.end_time:
+            ch = ch[:self.context.end_time]
+
+        pf, wt = 0, 0
+        for symbol in ch.columns:
+            val = 1 if symbol not in self.mapping else self.mapping[symbol]
+            pf += val * (1+ch[symbol]).cumprod()
+            wt += val
+        df = pd.DataFrame()
+        df['equity'] = pf/wt
+        return df
 
 
 class StrategyAsBenchmark(BaseBenchmark):

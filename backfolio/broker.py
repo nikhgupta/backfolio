@@ -196,18 +196,6 @@ class SimulatedBroker(AbstractBroker):
                 self,
                 'Insufficient Tx Asset: %0.8f (quantity) vs %0.8f (available)'
                 % (abs(order.quantity), asset_pos))
-        elif (order.is_sell and order.asset == order.commission_asset and
-                comp8(comm + abs(order.quantity), comm_asset_balance) > 0):
-            order.mark_rejected(
-                self,
-                'Insufficient Brokerage: %0.8f (comm) vs %0.8f (asset bal)' % (
-                    comm, comm_asset_balance - abs(order.quantity)))
-        elif (order.is_buy and order.base == order.commission_asset and
-                comp8(comm + abs(order.quantity), comm_asset_balance) > 0):
-            order.mark_rejected(
-                self,
-                'Insufficient Brokerage: %0.8f (comm) vs %0.8f (asset bal)' % (
-                    comm, comm_asset_balance - abs(order.quantity)))
         elif ((comp8(comm, comm_asset_balance) > 0 or
                 comm_asset_balance < 0) and not pending):
             order.mark_rejected(
@@ -230,6 +218,14 @@ class SimulatedBroker(AbstractBroker):
             order.mark_rejected(
                 self, 'Cannot buy asset for SELL order: %s' % order)
         elif order.is_open and order.order_type == 'LIMIT' and (
+                quantity > 0 and price >= symbol_data['low'] and
+                self.context.consider_limit_filled_on_touch):
+            order.mark_closed(self, limit_price=limit_price)
+        elif order.is_open and order.order_type == 'LIMIT' and (
+                quantity < 0 and price <= symbol_data['high'] and
+                self.context.consider_limit_filled_on_touch):
+            order.mark_closed(self)
+        elif order.is_open and order.order_type == 'LIMIT' and (
                 quantity > 0 and price > symbol_data['low']):
             order.mark_closed(self)
         elif order.is_open and order.order_type == 'LIMIT' and (
@@ -250,10 +246,16 @@ class SimulatedBroker(AbstractBroker):
     def get_order_price(self, advice):
         symbol = advice.symbol(self)
         price = advice.limit_price
+        opened_at = fast_xs(self.datacenter._current_real, symbol)['open']
         if price is None or advice.order_type == 'MARKET':
             if symbol not in self.datacenter._current_real.index:
                 return
-            price = fast_xs(self.datacenter._current_real, symbol)['open']
+            price = opened_at
+        elif price is not None:
+            if price >= opened_at and advice.quantity > 0:
+                price = opened_at
+            if price <= opened_at and advice.quantity < 0:
+                price = opened_at
         return price
 
     def get_slippage(self, advice, direction):
