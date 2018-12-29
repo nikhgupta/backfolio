@@ -449,7 +449,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
 
         min_comm = self.min_commission_asset_equity
         comm_sym = self._symbols[self.context.commission_asset]
-        if equity[comm_sym] < min_comm/100*self.account.equity:
+        if equity[self.context.commission_asset] < min_comm/100*self.account.equity:
             self.order_percent(comm_sym, min_comm, side='BUY')
 
         # first sell everything that is not in selected coins,

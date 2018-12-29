@@ -450,20 +450,8 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
             except Exception as e:
                 self.context.notify_error(e)
 
-    def reject_order(self, order, reason):
-        order.mark_rejected(self, '[BROKER]: %s' % reason)
-        return order
-
-    def create_order_after_placement(self, order_requested_event,
-                                     exchange=None):
-        advice = order_requested_event.item
-        if not exchange:
-            exchange = self.datacenter.exchange.name
-
-        quantity, cost, price = self.calculate_order_shares_and_cost(advice)
-        order = Order(advice, exchange, quantity, cost, price,
-                      0, self.context.commission_asset)
-        order.mark_created(self)
+    def reject_order(self, order, reason, track=True):
+        order.mark_rejected(self, '[BROKER]: %s' % reason, track)
         return order
 
     def __place_order_on_exchange(self, order, symbol, quantity, price):
@@ -499,26 +487,26 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         order = order_created_event.item
         if order.id:
             return
-        price = order.fill_price
-        quantity = order.quantity
+        quantity, price = order.quantity, order.fill_price
+        cash, cost = self.account.free[order.base], order.order_cost
         cost = order.order_cost
         symbol = order.symbol(self)
 
         market_data = self.datacenter.load_markets()
         if symbol not in market_data:
-            return
+            order.mark_rejected(self, 'Symbol obsolete: %s' % symbol, track=False)
         limits = market_data[symbol]['limits']
 
         if not quantity:
-            return self.reject_order(order, 'Quantity zero?')
+            return self.reject_order(order, 'Quantity zero?', track=False)
         if abs(quantity) < limits['amount']['min']:
-            return self.reject_order(order, 'Quantity < min. Exchange Value')
+            return self.reject_order(order, 'Quantity < min. Exchange Value', track=False)
         if abs(cost) < limits['cost']['min']:
-            return self.reject_order(order, 'Cost < min. Exchange Value')
+            return self.reject_order(order, 'Cost < min. Exchange Value', track=False)
         if price < limits['price']['min']:
-            return self.reject_order(order, 'Price < min. Exchange Value')
+            return self.reject_order(order, 'Price < min. Exchange Value', track=False)
         if abs(cost) < self.min_order_size:
-            return self.reject_order(order, 'Cost < min. Order Size')
+            return self.reject_order(order, 'Cost < min. Order Size', track=False)
 
         # create order on exchange
         resp = self.__place_order_on_exchange(order, symbol, quantity, price)
