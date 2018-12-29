@@ -33,6 +33,7 @@ class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):
 
         reprocess = False
         data = self.data
+        self.account._update_balance()
         equity = self.portfolio.equity_per_asset
         selected = self.selected_assets(data)
         rejected = self.rejected_assets(data)

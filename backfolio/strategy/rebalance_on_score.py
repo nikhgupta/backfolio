@@ -435,6 +435,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
 
         # assign weights and required equity for each asset
         data = self.assign_weights_and_required_equity(data, selected)
+        self.account._update_balance()
         equity = self.portfolio.equity_per_asset
         if not self._symbols:
             self._symbols = {asset: self.datacenter.assets_to_symbol(asset)
