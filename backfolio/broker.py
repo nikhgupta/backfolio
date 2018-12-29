@@ -500,15 +500,15 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         limits = market_data[symbol]['limits']
 
         if not quantity:
-            return self.reject_order(order, 'Quantity zero?', track=False)
+            return self.reject_order(order, 'Quantity zero?')
         if abs(quantity) < limits['amount']['min']:
-            return self.reject_order(order, 'Quantity < min. Exchange Value', track=False)
+            return self.reject_order(order, 'Quantity < min. Exchange Value')
         if abs(cost) < limits['cost']['min']:
-            return self.reject_order(order, 'Cost < min. Exchange Value', track=False)
+            return self.reject_order(order, 'Cost < min. Exchange Value')
         if price < limits['price']['min']:
-            return self.reject_order(order, 'Price < min. Exchange Value', track=False)
+            return self.reject_order(order, 'Price < min. Exchange Value')
         if abs(cost) < self.min_order_size:
-            return self.reject_order(order, 'Cost < min. Order Size', track=False)
+            return self.reject_order(order, 'Cost < min. Order Size')
 
         # create order on exchange
         resp = self.__place_order_on_exchange(order, symbol, quantity, price)
