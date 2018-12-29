@@ -1,4 +1,5 @@
 import ccxt
+import time
 from math import isnan
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
@@ -140,6 +141,7 @@ class SimulatedBroker(AbstractBroker):
                                      exchange=None):
         advice = order_requested_event.item
         symbol = advice.symbol(self)
+        self.account._update_balance()
 
         if symbol not in self.datacenter._current_real.index:
             return
@@ -494,7 +496,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
 
         market_data = self.datacenter.load_markets()
         if symbol not in market_data:
-            order.mark_rejected(self, 'Symbol obsolete: %s' % symbol, track=False)
+            order.mark_rejected(self, 'Symbol obsolete: %s' % symbol)
         limits = market_data[symbol]['limits']
 
         if not quantity:
