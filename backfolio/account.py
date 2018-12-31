@@ -153,12 +153,14 @@ class SimulatedAccount(AbstractAccount):
                 else:
                     price = None
                 if not price or price*abs(actual - expected) > 1e-8:
-                    print("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
-                    from IPython import embed; embed()
+                    self.context.notify("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
+                    if self.context.backtesting():
+                        from IPython import embed; embed()
                     return False
             elif expected <= -1e-6:
-                print("Found negative balance for %s: %s" % (asset, expected))
-                from IPython import embed; embed()
+                self.context.notify("Found negative balance for %s: %s" % (asset, expected))
+                if self.context.backtesting():
+                    from IPython import embed; embed()
                 return False
 
 

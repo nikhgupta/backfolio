@@ -498,8 +498,9 @@ class TradingSession:
                 break
 
             if counter > 5:
-                print("Could not remove %s asset from open orders or event queue!" % asset)
-                from IPython import embed; embed()
+                self.notify("Could not remove %s asset from open orders or event queue!" % asset, )
+                if self.backtesting():
+                    from IPython import embed; embed()
 
         self.account.free[self.base_currency]  += asset_equity
         self.account.total[self.base_currency] += asset_equity

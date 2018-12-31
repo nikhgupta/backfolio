@@ -159,8 +159,9 @@ class BasePortfolio(object):
             elif len(self.asset_equity) and asset in self.equity_per_asset:
                 resp['asset_equity'][asset] = self.equity_per_asset[asset]
             elif len(self.asset_equity):
-                print("!!!! NOT SURE WHAT TO DO - ASSET's VALUE COULD NOT BE DETERMINED (in portfolio.py)")
-                from IPython import embed; embed()
+                self.context.notify("!!!! NOT SURE WHAT TO DO - ASSET's VALUE COULD NOT BE DETERMINED (in portfolio.py)")
+                if self.context.backtesting():
+                    from IPython import embed; embed()
                 raise "asset's value could not be determined."
             else:
                 resp['asset_equity'][asset] = 0
