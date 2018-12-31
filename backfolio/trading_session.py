@@ -221,7 +221,7 @@ class TradingSession:
             print(message)
 
     def notify(self, message, formatted=True, now=None):
-        if now is None:
+        if now is None or not self.backtesting():
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.log("[%s]: %s" % (now, message))
         method = 'formatted_notify' if formatted else 'notify'
