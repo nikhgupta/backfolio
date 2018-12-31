@@ -440,7 +440,7 @@ class TradingSession:
 
         elif type(event) == OrderCreatedEvent:
             self._run_hook('after_order_created', event)
-            self.account._update_balance()
+            # self.account._update_balance()
             order = self.broker.execute_order_after_creation(event)
             if order:
                 self.portfolio.record_created_order(event, order)
@@ -455,7 +455,6 @@ class TradingSession:
 
         elif type(event) == OrderFilledEvent:
             self._run_hook('after_order_filled', event)
-            self.account._update_balance()
             self.portfolio.record_filled_order(event)
             self.account.update_after_order_filled(event)
             self.portfolio.update_commission_paid(event)
@@ -463,14 +462,12 @@ class TradingSession:
 
         elif type(event) == OrderUnfilledEvent:
             self._run_hook('after_order_unfilled', event)
-            self.account._update_balance()
             self.account.update_after_order_unfilled(event)
             self.portfolio.record_unfilled_order(event)
             self._run_hook('after_order_unfilled_done', event)
 
         elif type(event) == OrderRejectedEvent:
             self._run_hook('after_order_rejected', event)
-            self.account._update_balance()
             self.account.update_after_order_rejected(event)
             self.portfolio.record_rejected_order(event)
             self._run_hook('after_order_rejected_done', event)

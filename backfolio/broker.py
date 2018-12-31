@@ -141,7 +141,6 @@ class SimulatedBroker(AbstractBroker):
                                      exchange=None):
         advice = order_requested_event.item
         symbol = advice.symbol(self)
-        self.account._update_balance()
 
         if symbol not in self.datacenter._current_real.index:
             return
@@ -490,9 +489,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         if order.id:
             return
         quantity, price = order.quantity, order.fill_price
-        cash, cost = self.account.free[order.base], order.order_cost
-        cost = order.order_cost
-        symbol = order.symbol(self)
+        cost, symbol = order.order_cost, order.symbol(self)
 
         market_data = self.datacenter.load_markets()
         if symbol not in market_data:
