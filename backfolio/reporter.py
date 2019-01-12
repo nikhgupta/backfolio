@@ -357,6 +357,6 @@ class MonteCarloAnalysis(AbstractReporter):
                           linestyle='dashed', linewidth=2)
         axs[2][1].axvline(np.percentile(sharpe, 95), color='r',
                           linestyle='dashed', linewidth=2)
-        axs[2][1].set_title('Sharpe/tick Histogram (with replacement)')
+        axs[2][1].set_title('Mean/Stdev Histogram (with replacement)')
 
         plt.show()
