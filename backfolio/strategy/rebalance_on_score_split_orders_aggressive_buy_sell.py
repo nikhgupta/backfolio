@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import pandas as pd
 from abc import ABCMeta, abstractmethod
@@ -30,6 +31,9 @@ class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):
             self.already_buy = 2
         if not hasattr(self, 'already_sell'):
             self.already_sell = 2
+
+        if self.context.live_trading():
+            time.sleep(5) # have a break of 5 seconds when live trading to not DDOS
 
         reprocess = False
         data = self.data
