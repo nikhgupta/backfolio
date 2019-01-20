@@ -41,11 +41,12 @@ def ccxt_backtest(strat, start_time=None, end_time=None, daily=True,
             initial_balance=balance, initial_capital=initial_capital)
 
     pf.reporters = [
-        OrdersReporter(),
         CashAndEquityReporter(bounds=False, mean=True, plot=plots, period=24*7,
                               log_axis=False, each_tick=each_tick),
         BaseReporter(log_axis=log_axis, daily=daily,
                      plot=plots, doprint=False)]
+    if doprint:
+        pf.reporters.append(OrdersReporter())
 
     if benchmarks:
         pf.benchmarks = [
@@ -69,7 +70,7 @@ def ccxt_backtest(strat, start_time=None, end_time=None, daily=True,
 
         if doprint:
             print(tabulate(
-                pf.reporters[2].data, headers='keys', tablefmt="orgtbl"))
+                pf.reporters[1].data, headers='keys', tablefmt="orgtbl"))
 
     return pf
 

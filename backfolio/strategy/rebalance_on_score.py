@@ -197,7 +197,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
 
     def before_summary_report(self):
         """ Syntactic sugar to add a newline before printing summary. """
-        print()
+        if self.context.debug:
+            print()
 
     def increase_assets_if_required(self):
         """

@@ -333,7 +333,8 @@ class BaseDatacenter(object):
         # download/refresh data for symbols, if required
         bar = pyprind.ProgPercent(len(self.markets))
         for symbol in self.markets:
-            bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
+            if self.context.debug:
+                bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
 
             has_data = histories and symbol in histories
             if has_data and not refresh:
