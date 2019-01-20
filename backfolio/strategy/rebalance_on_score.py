@@ -447,6 +447,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         elif self.rebalance:
             return
 
+        if hasattr(self, "before_strategy_advice_at_tick"):
+            self.before_strategy_advice_at_tick()
+
         min_comm = self.min_commission_asset_equity
         comm_sym = self._symbols[self.context.commission_asset]
         if equity[self.context.commission_asset] < min_comm/100*self.account.equity:
@@ -499,6 +502,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                                        side='BUY')
                     n -= self.min_commission_asset_equity
                 self.order_percent(symbol, n, price, side='BUY')
+
+        if hasattr(self, "after_strategy_advice_at_tick"):
+            self.after_strategy_advice_at_tick()
 
         self._last_rebalance = self.tick.time
         self._save_state()

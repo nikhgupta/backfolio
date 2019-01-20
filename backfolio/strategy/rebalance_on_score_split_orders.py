@@ -17,15 +17,11 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
         if self.markup_sell is not None:
             price = data['price'] if 'price' in data else data['close']
             return [price*(1+x/100) for x in self.markup_sell]
-        else:
-            return [price]
 
     def buying_prices(self, _symbol, data):
         if self.markdn_buy is not None:
             price = data['price'] if 'price' in data else data['close']
             return [price*(1-x/100) for x in self.markdn_buy]
-        else:
-            return [price]
 
     def advice_investments_at_tick(self, _tick_event):
         # if we have no data for this tick, do nothing.
@@ -62,6 +58,9 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
         elif self.rebalance:
             return
 
+        if hasattr(self, "before_strategy_advice_at_tick"):
+            self.before_strategy_advice_at_tick()
+
         min_comm = self.min_commission_asset_equity
         comm_sym = self._symbols[self.context.commission_asset]
         if equity[self.context.commission_asset] < min_comm/100*self.account.equity:
@@ -81,13 +80,19 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                     N = asset_equity/self.account.equity*100
                     if asset == self.context.commission_asset:
                         n = self.min_commission_asset_equity
-                    for price in prices:
-                        x = (n-N)/len(prices)
-                        self.order_percent(symbol, x, price, relative=True, side='SELL')
+                    if prices:
+                        for price in prices:
+                            x = (n-N)/len(prices)
+                            self.order_percent(symbol, x, price, relative=True, side='SELL')
+                    else:
+                        self.order_percent(symbol, n, side='SELL')
                 elif asset_equity > asset_data['required_equity']/100 and asset_equity > 1e-3:
                     n, prices = 0, self.selling_prices(symbol, asset_data)
                     if asset != self.context.commission_asset:
-                        self.order_percent(symbol, 0, prices[-1], side='SELL')
+                        if prices:
+                            self.order_percent(symbol, 0, prices[-1], side='SELL')
+                        else:
+                            self.order_percent(symbol, 0, side='SELL')
 
         # next, sell assets that have higher equity first
         for asset, asset_equity in equity.items():
@@ -101,9 +106,12 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                 N = asset_equity/self.account.equity*100
                 if asset == self.context.commission_asset:
                     n = max(self.min_commission_asset_equity, n)
-                for price in prices:
-                    x = (n-N)/len(prices)
-                    self.order_percent(symbol, x, price, side='SELL', relative=True)
+                if prices:
+                    for price in prices:
+                        x = (n-N)/len(prices)
+                        self.order_percent(symbol, x, price, side='SELL', relative=True)
+                else:
+                    self.order_percent(symbol, n, side='SELL')
 
         # finally, buy assets that have lower equity now
         for asset, asset_equity in equity.items():
@@ -121,12 +129,20 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                     self.order_percent(symbol, self.min_commission_asset_equity, side='BUY')
                     n -= self.min_commission_asset_equity
                 if diff > 0.01:
-                    for price in prices:
-                        x = (n-N)/len(prices)
-                        #print("BUY: ", asset, x, n, N, price)
-                        self.order_percent(symbol, x, price, side='BUY', relative=True)
-                else:
+                    if prices:
+                        for price in prices:
+                            x = (n-N)/len(prices)
+                            #print("BUY: ", asset, x, n, N, price)
+                            self.order_percent(symbol, x, price, side='BUY', relative=True)
+                    else:
+                        self.order_percent(symbol, n, side='BUY')
+                elif prices:
                     self.order_percent(symbol, n, prices[-1], side='BUY')
+                else:
+                    self.order_percent(symbol, n, side='BUY')
+
+        if hasattr(self, "after_strategy_advice_at_tick"):
+            self.after_strategy_advice_at_tick()
 
         self._last_rebalance = self.tick.time
         self._save_state()

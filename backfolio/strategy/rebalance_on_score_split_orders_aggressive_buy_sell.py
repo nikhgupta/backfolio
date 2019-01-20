@@ -32,6 +32,9 @@ class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):
         if not hasattr(self, 'already_sell'):
             self.already_sell = 2
 
+        if self.markup_sell is None or self.markdn_buy is None:
+            return True
+
         if self.context.live_trading():
             time.sleep(5) # have a break of 5 seconds when live trading to not DDOS
 
