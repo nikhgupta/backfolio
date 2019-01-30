@@ -333,7 +333,7 @@ class BaseDatacenter(object):
         # download/refresh data for symbols, if required
         bar = pyprind.ProgPercent(len(self.markets))
         for symbol in self.markets:
-            if self.context.debug:
+            if self.context and self.context.debug:
                 bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
 
             has_data = histories and symbol in histories
@@ -382,7 +382,7 @@ class BaseDatacenter(object):
 class CryptocurrencyDatacenter(BaseDatacenter):
     def __init__(self, exchange, *args,
                  to_sym='BTC', limit=100000, per_page_limit=1000,
-                 start_since=None, params={}, **kwargs):
+                 start_since=None, params={}, reverse=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.to_sym = to_sym
         self.exchange = getattr(ccxt, exchange)(params)
@@ -390,10 +390,14 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         self.per_page_limit = per_page_limit
         self._market_data = {}
         self.start_since = start_since*1000 if start_since else None
+        self.reverse = reverse
 
         if not self.exchange.has['fetchOHLCV']:
             raise NotImplementedError(
                 'Exchange does not support fetching past market data.')
+
+        if reverse:
+            self.exchange.options["warnOnFetchOHLCVLimitArgument"] = False
 
     @property
     def name(self):
@@ -445,9 +449,10 @@ class CryptocurrencyDatacenter(BaseDatacenter):
             cdf = pd.DataFrame(columns=col_list).set_index('time')
 
         while True:
+            page_limit = None if self.reverse else self.per_page_limit
             data = self.exchange.fetch_ohlcv(
                 symbol, timeframe=self.timeframe,
-                since=last_timestamp, limit=self.per_page_limit)
+                since=last_timestamp, limit=page_limit)
 
             df = pd.DataFrame(data, columns=col_list)
             df['time'] = pd.to_datetime(df['time'], unit='ms')
@@ -461,8 +466,12 @@ class CryptocurrencyDatacenter(BaseDatacenter):
                 break
 
             plen = len(cdf)
-            last_timestamp = int((cdf.index[0] - pd.to_timedelta(
-                 self.per_page_limit * self.timeframe)).timestamp())*1000
+            if self.reverse:
+                last_timestamp = int((cdf.index[0] - pd.to_timedelta(
+                    len(df) * self.timeframe)).timestamp()*1000)
+            else:
+                last_timestamp = int((cdf.index[0] - pd.to_timedelta(
+                    self.per_page_limit * self.timeframe)).timestamp()*1000)
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
 

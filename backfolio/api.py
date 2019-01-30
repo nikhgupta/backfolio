@@ -22,7 +22,7 @@ from .reporter import (
 )
 
 
-def ccxt_backtest(strat, start_time=None, end_time=None, daily=True,
+def ccxt_backtest(strat, start_time=None, end_time=None,
                   timeframe='1h', exchange='bittrex', resample=None,
                   refresh=False, slippage=True, run=True,
                   balance={"BTC": 1}, initial_capital=None, commission=0.25,
@@ -43,8 +43,7 @@ def ccxt_backtest(strat, start_time=None, end_time=None, daily=True,
     pf.reporters = [
         CashAndEquityReporter(bounds=False, mean=True, plot=plots, period=24*7,
                               log_axis=False, each_tick=each_tick),
-        BaseReporter(log_axis=log_axis, daily=daily,
-                     plot=plots, doprint=False)]
+        BaseReporter(log_axis=log_axis, plot=plots, doprint=False)]
     if doprint:
         pf.reporters.append(OrdersReporter())
 
@@ -126,7 +125,7 @@ def ccxt_live(name, session, strat, cred, slack_url,
 
 
 def quick_bt(history, lookup, top=None, bottom=None, ft=None, tt=None,
-             fee=0.05, annualization=365, rebalance=None, plots=True):
+             fee=0.05, rebalance=None, plots=True):
     """
     Quick vectorized backtesting to explore worthy strategies.
     """
@@ -156,12 +155,12 @@ def quick_bt(history, lookup, top=None, bottom=None, ft=None, tt=None,
     df['bottom'] = (pd.Series(war)/bottom).cumsum()
 
     md, td, bd = df['market'].diff(), df['top'].diff(), df['bottom'].diff()
-    msh = ep.sharpe_ratio(md, annualization=annualization)
-    tsh = ep.sharpe_ratio(td, annualization=annualization)
-    bsh = ep.sharpe_ratio(bd, annualization=annualization)
-    mso = ep.sortino_ratio(md, annualization=annualization)
-    tso = ep.sortino_ratio(td, annualization=annualization)
-    bso = ep.sortino_ratio(bd, annualization=annualization)
+    msh = ep.sharpe_ratio(md)
+    tsh = ep.sharpe_ratio(td)
+    bsh = ep.sharpe_ratio(bd)
+    mso = ep.sortino_ratio(md)
+    tso = ep.sortino_ratio(td)
+    bso = ep.sortino_ratio(bd)
     mdd = ep.max_drawdown(md)
     tdd = ep.max_drawdown(td)
     bdd = ep.max_drawdown(bd)

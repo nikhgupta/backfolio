@@ -234,8 +234,9 @@ class CcxtExchangeAccount(AbstractAccount):
 
     def _update_balance(self):
         response = self.exchange.fetch_balance()
-        for d in response['info']['balances']:
-            self.free[d['asset']] = float(d['free'])
-            self.locked[d['asset']] = float(d['locked'])
-            self.total[d['asset']] = float(d['free']) + float(d['locked'])
+        for k,v in response['free'].items():
+            self.free[k] = float(v)
+        for k, v in response['total'].items():
+            self.total[k] = float(v)
+            self.locked[k] = self.total[k] - self.free[k]
         return (self.free, self.locked, self.total)

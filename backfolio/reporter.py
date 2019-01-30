@@ -73,12 +73,11 @@ class AbstractReporter(object):
 
 
 class BaseReporter(AbstractReporter):
-    def __init__(self, annualization=365, daily=True,
-                 log_axis=True, plot=True, doprint=True):
+    def __init__(self, annualization=None, log_axis=True,
+            plot=True, doprint=True):
         super().__init__(name='base-reporter')
         self.annualization = annualization
         self.log_axis = log_axis
-        self.daily = daily
         self.plot = plot
         self.doprint = doprint
 
@@ -86,12 +85,17 @@ class BaseReporter(AbstractReporter):
         if len(self.portfolio.timeline) < 2:
             return
         ticks = self.annualization
+        if not ticks:
+            eq = self.portfolio.timeline.returns
+            freq = pd.tseries.frequencies.to_offset(pd.infer_freq(eq.index))
+            ticks = int((365*24*60*60)/pd.to_timedelta(freq).total_seconds())
+
         benchmarks = self.benchmarks + [self.portfolio]
         df = pd.DataFrame(columns=[bm.name for bm in benchmarks])
         df.loc['invested'] = 1
         for bm in benchmarks:
-            name, series = (bm.name, bm.daily)
-            pofret = self.portfolio.daily.returns
+            name, series, dseries = (bm.name, bm.timeline, bm.daily)
+            pofret = self.portfolio.timeline.returns
 
             if series.empty:
                 continue
@@ -99,12 +103,12 @@ class BaseReporter(AbstractReporter):
             # regarding returns obtained from the strategy
             df.loc['final_return', name] = series.cum_returns.iloc[-1]
             df.loc['daily_return', name] = (series.cum_returns.iloc[-1]
-                                            ** (1/len(series))) - 1
-            df.loc['annual_return', name] = ep.annual_return(
-                series.returns, period='daily', annualization=ticks)
+                                            ** (ticks/365/len(series))) - 1
+            df.loc['annual_return', name] = ep.annual_return(series.returns,
+                    period='daily', annualization=ticks)
             df.loc['performance', name] = (
                 series.cum_returns.iloc[-1]
-                / benchmarks[-1].daily.cum_returns.iloc[-1])
+                / benchmarks[-1].timeline.cum_returns.iloc[-1])
 
             if self.account._extra_capital:
                 if name == 'portfolio':
@@ -114,9 +118,11 @@ class BaseReporter(AbstractReporter):
                 else:
                     equity, ret, cumret = (
                         series.equity, series.returns, series.cum_returns)
+                    dequity, dret, dcumret = (
+                        dseries.equity, dseries.returns, dseries.cum_returns)
                 df.loc['overall_growth', name] = cumret.iloc[-1]
                 df.loc['daily_growth', name] = (cumret.iloc[-1]
-                                                ** (1/len(series))) - 1
+                                                ** (ticks/365/len(series))) - 1
                 df.loc['annual_growth', name] = ep.annual_return(
                     ret, period='daily', annualization=ticks)
 
@@ -130,16 +136,15 @@ class BaseReporter(AbstractReporter):
                 series.returns)
 
             # various ratio and other stats about strategy
-            df.loc['sharpe_ratio', name] = ep.sharpe_ratio(
-                series.returns, period='daily', annualization=ticks)
+            df.loc['sharpe_ratio', name] = ep.sharpe_ratio( series.returns, annualization=ticks)
             df.loc['calmar_ratio', name] = ep.calmar_ratio(
-                series.returns, period='daily', annualization=ticks)
+                series.returns, annualization=ticks)
             df.loc['sortino_ratio', name] = ep.sortino_ratio(
-                series.returns, period='daily', annualization=ticks)
+                series.returns, annualization=ticks)
             df.loc['tail_ratio', name] = ep.tail_ratio(series.returns)
             df.loc['alpha', name], df.loc['beta', name] = ep.alpha_beta(
-                self.portfolio.daily.returns, series.returns,
-                period='daily', annualization=ticks)
+                self.portfolio.timeline.returns,
+                series.returns, annualization=ticks)
 
             df.loc['correlation', name] = series.returns.corr(pofret)
             df.loc['covariance', name] = (pofret.cov(series.returns)
@@ -153,7 +158,7 @@ class BaseReporter(AbstractReporter):
 
         for bm in benchmarks:
             if self.plot:
-                curve = bm.daily if self.daily else bm.timeline
+                curve = bm.timeline
                 if bm.name == 'portfolio':
                     ax.plot(curve.cum_returns, label=bm.name,
                             color='black', linewidth=3)
