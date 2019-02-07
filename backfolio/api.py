@@ -67,7 +67,7 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
     if run:
         pf.run()
 
-        if doprint:
+        if doprint and len(pf.reporters) > 1:
             print(tabulate(
                 pf.reporters[1].data, headers='keys', tablefmt="orgtbl"))
 

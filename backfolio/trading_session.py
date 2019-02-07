@@ -220,19 +220,19 @@ class TradingSession:
         if self.debug:
             print(message)
 
-    def notify(self, message, formatted=True, now=None):
+    def notify(self, message, formatted=True, now=None, publish=True):
         if now is None or not self.backtesting():
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.log("[%s]: %s" % (now, message))
         method = 'formatted_notify' if formatted else 'notify'
         for notifier in self.notifiers:
             if hasattr(notifier, method):
-                getattr(notifier, method)(message, now)
+                getattr(notifier, method)(message, now=now, publish=publish)
 
-    def notify_error(self, err):
+    def notify_error(self, err, publish=True):
         str = "[%s] - %s" % (err.__class__.__name__, err.__str__())
         str += "\n" + traceback.format_exc()
-        self.notify(str, formatted=True)
+        self.notify(str, formatted=True, publish=publish)
 
     def backtesting(self):
         return self.mode == 'backtest'
@@ -498,7 +498,7 @@ class TradingSession:
                 break
 
             if counter > 5:
-                self.notify("Could not remove %s asset from open orders or event queue!" % asset, )
+                self.notify("Could not remove %s asset from open orders or event queue!" % asset)
                 if self.backtesting():
                     from IPython import embed; embed()
 

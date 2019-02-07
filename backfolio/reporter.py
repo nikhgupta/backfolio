@@ -198,7 +198,7 @@ class CashAndEquityReporter(AbstractReporter):
         if 'commission_paid' in data and not np.isnan(data['commission_paid']):
             message += ", CommPaid: %.8f %s"
             message %= (data['commission_paid'], comm)
-        self.context.notify(message, formatted=True, now=data['time'])
+        self.context.notify(message, formatted=True, now=data['time'], publish=False)
 
     def _plot_with_averages(self, axis, name, data, **kwargs):
         axis.plot(data, label=name)

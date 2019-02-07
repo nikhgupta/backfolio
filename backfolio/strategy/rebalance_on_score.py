@@ -441,15 +441,14 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             self._symbols = {asset: self.datacenter.assets_to_symbol(asset)
                              for asset, _ in equity.items()}
 
+        if hasattr(self, "before_strategy_advice_at_tick"):
+            self.before_strategy_advice_at_tick()
 
         # if we need to wait for rebalancing, do nothing.
         if self.rebalance_required(data, selected, rejected):
             self.broker.cancel_pending_orders()
         elif self.rebalance:
             return
-
-        if hasattr(self, "before_strategy_advice_at_tick"):
-            self.before_strategy_advice_at_tick()
 
         min_comm = self.min_commission_asset_equity
         comm_sym = self._symbols[self.context.commission_asset]
@@ -521,7 +520,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 "  Created %4s %s order with ID %s for %0.8f %s at %.8f %s" % (
                    order.side, order.order_type, order.id, abs(order.quantity),
                    order.asset, order.fill_price, order.base),
-                formatted=True, now=event.item.time)
+                formatted=True, now=event.item.time, publish=False)
 
     def after_order_rejected(self, event):
         """
@@ -535,5 +534,5 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 " Rejected %4s %s order for %0.8f %s at %.8f %s (Reason: %s)"
                 % (order.side, order.order_type, abs(order.quantity),
                    order.asset, order.fill_price, order.base, event.reason),
-                formatted=True, now=event.item.time)
+                formatted=True, now=event.item.time, publish=False)
 

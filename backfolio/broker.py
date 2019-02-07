@@ -445,7 +445,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
                 self.context.notify(
                     "Cancelled open %4s order: %s for %s at %.8f" % (
                      order.side, order.id, order.asset,
-                     order.fill_price), formatted=True)
+                     order.fill_price), formatted=True, publish=False)
             except OrderNotFound:
                 pass
             except Exception as e:
@@ -472,10 +472,10 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
                     symbol, abs(quantity))
         except InsufficientFunds:
             order.mark_rejected(self, "INSUFFICIENTFUNDS")
-            self.notify(message, formatted=True)
+            self.notify(message, formatted=True, publish=False)
         except Exception as e:
             order.mark_rejected(self, "FAILEDORDER")
-            self.notify(message, formatted=True)
+            self.notify(message, formatted=True, publish=True)
             self.notify_error(e)
         finally:
             return resp

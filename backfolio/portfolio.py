@@ -162,7 +162,9 @@ class BasePortfolio(object):
                 self.context.notify("!!!! NOT SURE WHAT TO DO - ASSET's VALUE COULD NOT BE DETERMINED (in portfolio.py)")
                 if self.context.backtesting():
                     from IPython import embed; embed()
-                raise "asset's value could not be determined."
+                    raise "asset's value could not be determined."
+                else:
+                    resp['asset_equity'][asset] = 0
             else:
                 resp['asset_equity'][asset] = 0
 
