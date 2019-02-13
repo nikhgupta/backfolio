@@ -52,14 +52,14 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
             self._symbols = {asset: self.datacenter.assets_to_symbol(asset)
                              for asset, _ in equity.items()}
 
+        if hasattr(self, "before_strategy_advice_at_tick"):
+            self.before_strategy_advice_at_tick()
+
         # if we need to wait for rebalancing, do nothing.
         if self.rebalance_required(data, selected, rejected):
             self.broker.cancel_pending_orders()
         elif self.rebalance:
             return
-
-        if hasattr(self, "before_strategy_advice_at_tick"):
-            self.before_strategy_advice_at_tick()
 
         min_comm = self.min_commission_asset_equity
         comm_sym = self._symbols[self.context.commission_asset]

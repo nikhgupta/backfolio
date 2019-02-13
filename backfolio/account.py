@@ -158,10 +158,17 @@ class SimulatedAccount(AbstractAccount):
                         from IPython import embed; embed()
                     return False
             elif expected <= -1e-6:
-                self.context.notify("Found negative balance for %s: %s" % (asset, expected))
-                if self.context.backtesting():
-                    from IPython import embed; embed()
-                return False
+                symbol = self.datacenter.assets_to_symbol(asset)
+                price = self.datacenter._data_seen[-1].data['history']
+                if symbol in price.index:
+                    price = price.loc[symbol, 'close']
+                else:
+                    price = None
+                if round(expected*price,8) <= -1e-8:
+                    self.context.notify("Found negative balance for %s: %s" % (asset, expected))
+                    if self.context.backtesting():
+                        from IPython import embed; embed()
+                    return False
 
 
     def display_stats(self):
