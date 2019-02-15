@@ -6,6 +6,7 @@ an exchange/datacenter.
 import os
 import glob
 import ccxt
+import time
 import json
 import pyprind
 import requests
@@ -17,6 +18,13 @@ try:
 except ModuleNotFoundError:
     print("QuandlDatacenter will not work. Library missing!")
 
+
+try:
+    import kiteconnect
+except ModuleNotFoundError:
+    print("ZerodhaDatacenter will not work. Library missing!")
+
+
 try:
     from nsetools import Nse
     from yahoofinancials import YahooFinancials
@@ -25,7 +33,7 @@ except:
 
 from zipfile import ZipFile
 from abc import ABCMeta, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import join, basename, isfile
 
 from .core.object import Tick
@@ -54,7 +62,8 @@ class BaseDatacenter(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, timeframe='1d', fill=True, realign=True, resample=None):
+    def __init__(self, timeframe='1d', fill=False, realign=False,
+            resample=None):
         self._name = 'base_datacenter'
         self._selected_symbols = []
         self.timeframe = timeframe
@@ -63,7 +72,7 @@ class BaseDatacenter(object):
         self.resample = resample
         self.realign = realign
 
-    def reset(self, context=None, root_dir=None):
+    def reset(self, context=None, root_dir=None, debug=False):
         """ Routine to run when trading session is resetted. """
         self.context = context
         if hasattr(context, "root_dir") and not root_dir:
@@ -75,6 +84,7 @@ class BaseDatacenter(object):
         self._data_dir = join(root_dir, "data", self.name)
         make_path(self._data_dir)
 
+        self._debug = debug
         self._data_seen = []
         self._all_data = None
         self._generator = None
@@ -165,6 +175,10 @@ class BaseDatacenter(object):
             return self.context.log(message)
         else:
             print(message)
+
+    @property
+    def debug(self):
+        return self._debug or (self.context and self.context.debug)
 
     @abstractmethod
     def assets_to_symbol(self, *_args):
@@ -316,7 +330,7 @@ class BaseDatacenter(object):
                 continue
 
             data = self._sanitize_index(data)
-            data.index = pd.to_datetime(data.index).floor(freq)
+            data.index = pd.to_datetime(data.index) # .floor(freq)
             data = data[~data.index.duplicated(keep='last')]
             histories[name] = data.sort_index(ascending=1)
             if name not in self.markets:
@@ -333,7 +347,7 @@ class BaseDatacenter(object):
         # download/refresh data for symbols, if required
         bar = pyprind.ProgPercent(len(self.markets))
         for symbol in self.markets:
-            if self.context and self.context.debug:
+            if self.debug:
                 bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
 
             has_data = histories and symbol in histories
@@ -627,4 +641,116 @@ class QuandlDatacenter(BaseDatacenter):
                                   "Adj. High": "high", "Adj. Low": "low",
                                   "Adj. Volume": "volume"})
 
+        return self._cleanup_and_save_symbol_data(symbol, cdf)
+
+
+class ZerodhaDatacenter(BaseDatacenter):
+    def __init__(self, api_key=None, access_token=None, *args,
+                 limit=100000, params={}, **kwargs):
+        super().__init__(*args, **kwargs)
+        api_key = api_key if api_key else os.environ['ZERODHA_API_KEY']
+        access_token = access_token if access_token else os.environ['ZERODHA_ACCESS_TOKEN']
+
+        self.exchange = kiteconnect.KiteConnect(api_key=api_key)
+        self.exchange.set_access_token(access_token)
+
+        self.history_limit = limit
+        self._market_data = {}
+        self.to_sym = 'INR'
+
+    @property
+    def name(self):
+        return "stocks/nse-zerodha/%s" % self.timeframe
+
+    def load_markets(self):
+        if self.refresh_history:
+            self._market_data = {"%s@%s/INR" % (i['tradingsymbol'], i['instrument_token']): i
+                                 for i in self.exchange.instruments(exchange='NSE')
+                                 if i['segment'] == 'NSE'}
+        elif self.history is not None:
+            self._market_data = dict(
+                [(k, {}) for k in self.history.axes[0]])
+        else:
+            raise ValueError("You must run with refresh=True to load markets")
+        return self._market_data
+
+    def all_symbols(self):
+        """ Fetch all symbols supported by this exchange as a list """
+        self.load_markets()
+        self.markets = list(self._market_data.keys())
+
+        if self._selected_symbols:
+            self.markets = [x for x in self.markets if x.split("_")[0] in self._selected_symbols]
+
+        return self.markets
+
+    def symbol_to_assets(self, symbol, sid=False):
+        fsym, tsym = symbol.split("/")
+        if sid:
+            sid = fsym.split("@")[1]
+            return [fsym, sid, tsym]
+        else:
+            return [fsym, tsym]
+
+    def assets_to_symbol(self, fsym, tsym=None):
+        return "%s/%s" % (fsym, tsym if tsym else 'INR')
+
+    def get_historical_data_from_api(self, sid, since, to, interval):
+        if interval == '1d' or interval == '24h' or interval == '1440m':
+            interval = 'day'
+        elif interval == '1h' or interval == '60m':
+            interval = '60minute'
+        elif interval[-1] == "m":
+            interval += 'inute'
+        #print(interval)
+        return self.exchange.historical_data(sid, since.strftime("%Y-%m-%d %H:%M:%S"),
+                                             to.strftime("%Y-%m-%d 23:59:59"), interval)
+
+    def refresh_history_for_symbol(self, symbol, cdf=None):
+        """ Refresh history for a given asset from exchange """
+        plen = 0
+        last_timestamp = None
+        col_list = ['time', 'open', 'high', 'low', 'close', 'volume']
+        if cdf is None:
+            cdf = pd.DataFrame(columns=col_list).set_index('time')
+
+        while True:
+            fsym, instrument_id, tsym = self.symbol_to_assets(symbol, sid=True)
+
+            if last_timestamp is None:
+                last_timestamp = datetime.utcnow()
+                since = last_timestamp - pd.to_timedelta(self.history_limit*self.timeframe)
+            else:
+                since = last_timestamp - pd.to_timedelta(df.index[-1] - df.index[0])
+            since = pd.to_datetime(int(since.timestamp()*1000), unit='ms')
+            #print(since, last_timestamp)
+
+            try:
+                data = self.get_historical_data_from_api(instrument_id, since, last_timestamp, self.timeframe)
+            except kiteconnect.exceptions.GeneralException as e:
+                #from IPython import embed; embed()
+                pass
+
+            df = pd.DataFrame.from_records(data)
+            if df.empty:
+                break
+            df['time'] = pd.to_datetime(df['date'])
+            df = df.sort_values(by='time', ascending=1).set_index('time')
+            df = df.drop(['date'], axis=1).tz_convert(None)
+            if self.timeframe == '1d':
+                df.index = df.index + pd.to_timedelta("5.5h")
+            cdf = cdf.append(df)
+            cdf = cdf[~cdf.index.duplicated(keep='last')]
+            cdf = cdf.sort_index(ascending=1)
+            if (df.empty or len(cdf) == plen or self.history_limit is None or
+                    len(cdf) >= self.history_limit or
+                    (self.context and not self.context.backtesting())):
+                break
+
+            plen = len(cdf)
+            last_timestamp = df.index[0]
+            time.sleep(1)
+
+        if cdf.empty:
+            return cdf
         return self._cleanup_and_save_symbol_data(symbol, cdf)

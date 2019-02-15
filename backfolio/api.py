@@ -32,14 +32,15 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
                   refresh=False, slippage=True, run=True,
                   balance={"BTC": 1}, initial_capital=None, commission=0.25,
                   benchmarks=False, debug=True, doprint=True, plots=True,
-                  before_run=None, log_axis=False, each_tick=False):
+                  before_run=None, log_axis=False, each_tick=False,
+                  fill=False, realign=False):
     pf = BacktestSession()
     random.seed(1)
     pf.debug = debug
     pf.refresh_history = refresh
 
     pf.commission = commission
-    pf.datacenter = CryptoDC(exchange, timeframe, resample=resample)
+    pf.datacenter = CryptoDC(exchange, timeframe, resample=resample, fill=fill, realign=realign)
     pf.portfolio = BasePortfolio()
     pf.broker = SimulatedBroker()
     pf.account = SimulatedAccount(

@@ -45,6 +45,8 @@ class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):
         selected = self.selected_assets(data)
         rejected = self.rejected_assets(data)
         for asset, asset_equity in equity.items():
+            if asset not in self._symbols:
+                continue
             symbol = self._symbols[asset]
             rem = self.account.free[asset]/self.account.total[asset]*asset_equity if self.account.total[asset] >= 1e-8 else 0
             if (symbol in rejected.index and asset != self.context.commission_asset and
