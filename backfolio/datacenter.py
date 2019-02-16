@@ -220,9 +220,11 @@ class BaseDatacenter(object):
         self._prev_tick = None
         for ts in history.major_axis:
             self._prev_tick = self._current_real
-            self._current_real = history.loc[:, ts, :].T.dropna(how='all')
+            self._current_real = history.loc[:, ts, :].T.dropna(how='any')
             if self._prev_tick is not None:
-                yield((ts, self._prev_tick))
+                empty_history = self._prev_tick['close'].dropna(how='all').empty
+                if not empty_history:
+                    yield((ts, self._prev_tick))
 
     def recent_frames(self, n=1):
         """
@@ -330,7 +332,10 @@ class BaseDatacenter(object):
                 continue
 
             data = self._sanitize_index(data)
-            data.index = pd.to_datetime(data.index) # .floor(freq)
+            if self.realign:
+                data.index = pd.to_datetime(data.index).round(freq)
+            else:
+                data.index = pd.to_datetime(data.index)
             data = data[~data.index.duplicated(keep='last')]
             histories[name] = data.sort_index(ascending=1)
             if name not in self.markets:

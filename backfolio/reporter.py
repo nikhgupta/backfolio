@@ -88,6 +88,8 @@ class BaseReporter(AbstractReporter):
         if not ticks:
             eq = self.portfolio.timeline.returns
             freq = pd.tseries.frequencies.to_offset(pd.infer_freq(eq.index))
+            if freq is None:
+                freq = self.datacenter.timeframe
             ticks = int((365*24*60*60)/pd.to_timedelta(freq).total_seconds())
 
         benchmarks = self.benchmarks + [self.portfolio]

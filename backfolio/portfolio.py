@@ -142,6 +142,8 @@ class BasePortfolio(object):
         data = self.last_tick.history
         for asset, quantity in self.account.total.items():
             symbol = self.datacenter.assets_to_symbol(asset)
+            if quantity == 0:
+                resp['asset_equity'][asset] = 0
             if asset == self.context.base_currency:
                 resp['asset_equity'][asset] = quantity
             elif symbol in data.index:

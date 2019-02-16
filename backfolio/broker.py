@@ -1,5 +1,6 @@
 import ccxt
 import time
+import numpy as np
 from math import isnan
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
@@ -152,7 +153,7 @@ class SimulatedBroker(AbstractBroker):
                 exchange = self.datacenter.name
 
         quantity, cost, price = self.calculate_order_shares_and_cost(advice)
-        if abs(quantity) < 1e-8 or price < 1e-8:  # empty order
+        if np.isnan(price) or abs(quantity) < 1e-8 or price < 1e-8:
             return
         comm, comm_asset, comm_rate, comm_cost = self.calculate_commission(
             advice, quantity, cost)

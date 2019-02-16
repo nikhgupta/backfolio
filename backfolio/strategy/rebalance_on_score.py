@@ -386,9 +386,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         asset_equity = self.portfolio.equity_per_asset
         comm_percent = self.min_commission_asset_equity/100
         required_comm_equity = self.account.equity * comm_percent
-        current_comm_equity = asset_equity[self.context.commission_asset]
-        if current_comm_equity < required_comm_equity:
-            data['weight'] *= 1 - comm_percent
+        data['weight'] *= 1 - comm_percent
         if self.reserved_cash:
             data["weight"] *= (1-self.reserved_cash/100)
         data['required_equity'] = data['weight'] * self.account.equity
