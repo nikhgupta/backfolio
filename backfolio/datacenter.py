@@ -214,7 +214,7 @@ class BaseDatacenter(object):
         self._prev_tick = None
         for ts in history.major_axis:
             self._prev_tick = self._current_real
-            self._current_real = history.loc[:, ts, :].T.dropna(how='any')
+            self._current_real = history.loc[:, ts, :].T.dropna(how='all')
             if self._prev_tick is not None:
                 empty_history = self._prev_tick['close'].dropna(how='all').empty
                 if not empty_history:
