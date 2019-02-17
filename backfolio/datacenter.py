@@ -25,12 +25,6 @@ except ModuleNotFoundError:
     print("ZerodhaDatacenter will not work. Library missing!")
 
 
-try:
-    from nsetools import Nse
-    from yahoofinancials import YahooFinancials
-except:
-    print("NseDatacenter will not work. Library missing!")
-
 from zipfile import ZipFile
 from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
