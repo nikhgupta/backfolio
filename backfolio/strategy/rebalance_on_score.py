@@ -358,7 +358,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         return (not self._last_rebalance or
                 time >= self._last_rebalance + timediff)
 
-    def selected_assets(self, data):
+    def selected_assets(self, data=None):
         """
         Allow child strategy to modify asset selection.
         By default:
@@ -368,7 +368,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
               if `assets` is not None
             - Select top N assets, if `assets` is specified.
         """
-        # remove any assets with nan weight or score
+        data = data if data is not None else self.data
+        data = self.sorted_data(data)
+
         if "weight" in data.columns:
             data = data[np.isfinite(data[self.weight_col])]
             return data[data[self.weight_col] > 0]
@@ -379,7 +381,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             data = data[np.isfinite(data[self.score_col])]
             return data[data[self.score_col] > 0]
 
-    def rejected_assets(self, data):
+    def rejected_assets(self, data=None, selected=None):
         """
         Allow child strategy to modify asset selection.
         By default:
@@ -391,9 +393,15 @@ class RebalanceOnScoreStrategy(BaseStrategy):
 
         Be careful not to specify negative weights.
         """
-        if "weight" in data.columns:
+        data = data if data is not None else self.data
+        selected = self.selected if selected is None else selected
+
+        if selected is not None:
+            return data[~data.index.isin(selected.index)]
+        elif "weight" in data.columns:
             return data[data[self.weight_col] == 0]
         elif self.assets:
+            data = self.sorted_data(data)
             return data.tail(len(data) - self.assets)
         else:
             return data[data[self.score_col] < 0]
