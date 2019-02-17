@@ -155,6 +155,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         # self.broker.max_order_size = self.max_order_size
         # self.broker.max_position_held = self.max_order_size
         self.broker.min_order_size = self.min_order_size
+        self.set_blacklisted()
 
     def transform_history(self, panel):
         """
@@ -189,7 +190,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             panel.loc[:, :, self.weight_col] = self.calculate_weights(panel)
         return panel
 
-    def order_percent(self, symbol, amount, price=None,
+    def order_percent(self, symbol, amount, price=None, ignore_size=False,
                       max_cost=None, side=None, relative=None):
         """
         Place a MARKET/LIMIT order for a symbol for a given percent of
@@ -210,6 +211,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         if self.max_order_size:
             max_flow = max(max_flow, self.max_order_size)
         max_cost = min(max_cost, max_flow) if max_cost else max_flow
+        max_cost = None if ignore_size else max_cost
         args = ('MARKET', None, max_cost, side)
         if price:
             args = ('LIMIT', price, max_cost, side)
@@ -222,6 +224,30 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         """ Syntactic sugar to add a newline before printing summary. """
         if self.context.debug:
             print()
+
+    def set_blacklisted(self, df=None):
+        """
+        Hook to set blacklisted symbols.
+
+        Blacklisted symbols are exited with a single Market order which ignores
+        volume size as soon, as they are first encountered.
+
+        Note that backtest does not account for this gracefully, as in
+        real world scenario a blacklisted asset (e.g. asset delisting)
+        will often be accompanied with a large sell-off - accompanied with our
+        single large market order - it will result in high slippage,
+        but backtest considers normal slippage.
+
+        Must return a dataframe with:
+        - Time (as column) when a symbol was blacklisted
+        - Asset (as index) which was blacklisted
+        """
+        df = pd.DataFrame(columns=['time', 'asset']) if df is None else df
+        if df is not None:
+            df['symbol'] = df['asset'].apply(
+                lambda x: self.datacenter.assets_to_symbol(x))
+            df = df.set_index('symbol')
+        self.blacklisted = df
 
     def increase_assets_if_required(self):
         """
@@ -370,16 +396,18 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         """
         data = data if data is not None else self.data
         data = self.sorted_data(data)
+        data = data[~data.index.isin(self.banned.index)]
 
         if "weight" in data.columns:
             data = data[np.isfinite(data[self.weight_col])]
-            return data[data[self.weight_col] > 0]
+            self.selected = data[data[self.weight_col] > 0]
         elif self.assets:
             data = data[np.isfinite(data[self.score_col])]
-            return data[data[self.score_col] > 0].head(self.assets)
+            self.selected = data[data[self.score_col] > 0].head(self.assets)
         else:
             data = data[np.isfinite(data[self.score_col])]
-            return data[data[self.score_col] > 0]
+            self.selected = data[data[self.score_col] > 0]
+        return self.selected
 
     def rejected_assets(self, data=None, selected=None):
         """
@@ -466,6 +494,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                 self.weight_col not in data.columns):
             return
 
+        # symbols that are banned at this moment onwards due to being blacklisted
+        self.banned = self.blacklisted[self.blacklisted['time']<=self.tick.time]
+
         # select the top performing assets based on their scores,
         # or weights and also, select coins to sell off.
         selected = self.selected_assets(data)
@@ -498,7 +529,13 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         # ensure that we have it at a fixed percent of equity all the time.
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
+            if (symbol in self.banned.index and symbol in data.index and
+                    asset_equity >= 1e-3):
+                asset_data = fast_xs(data, symbol)
+                self.order_percent(symbol, 0, side='SELL', ignore_size=True)
+
             if (symbol in rejected.index and
+                    symbol not in self.banned.index and
                     symbol in data.index and symbol not in selected.index):
                 asset_data = fast_xs(data, symbol)
                 if asset_equity > asset_data['required_equity']/100 and asset_equity > 1e-2:
@@ -521,11 +558,11 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                             self.order_percent(symbol, 0, side='SELL')
 
         self.replenish_commission_asset_equity(
-            self._symbols[comm_asset], equity, current_equity, at=1/2)
+            comm_sym, equity, current_equity, at=1/2)
         # next, sell assets that have higher equity first
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
-            if symbol not in selected.index:
+            if symbol not in selected.index or symbol in self.banned.index:
                 continue
             asset_data = fast_xs(data, symbol)
             if asset_equity > asset_data['required_equity'] and asset_equity > 1e-3:
@@ -542,11 +579,11 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                     self.order_percent(symbol, n, side='SELL')
 
         self.replenish_commission_asset_equity(
-            self._symbols[comm_asset], equity, current_equity, at=1/2)
+            comm_sym, equity, current_equity, at=1/2)
         # finally, buy assets that have lower equity now
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
-            if symbol not in selected.index:
+            if symbol not in selected.index or symbol in self.banned.index:
                 continue
             asset_data = fast_xs(data, symbol)
             if asset_equity < asset_data['required_equity']:
@@ -562,7 +599,6 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                     if prices:
                         for price in prices:
                             x = (n-N)/len(prices)
-                            #print("BUY: ", asset, x, n, N, price)
                             self.order_percent(symbol, x, price, side='BUY', relative=True)
                     else:
                         self.order_percent(symbol, n, side='BUY')
@@ -691,6 +727,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                     self.markdn_buy_func(curr, self.already_buy)
                     for curr in orig]
                 for symbol in selected.index:
+                    if (symbol not in self.data.index or
+                            symbol in self.banned.index):
+                        continue
                     asset_data = fast_xs(self.data, symbol)
                     prices = self.buying_prices(symbol, asset_data)
                     for price in prices:
