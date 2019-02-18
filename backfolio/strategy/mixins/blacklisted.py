@@ -27,6 +27,8 @@ class BlacklistedMixin(object):
         - Time (as column) when a symbol was blacklisted
         - Asset (as index) which was blacklisted
         """
+        if self.blacklisted is not None:
+            return
         df = pd.DataFrame(columns=['time', 'asset']) if df is None else df
         if df is not None:
             df['symbol'] = df['asset'].apply(
