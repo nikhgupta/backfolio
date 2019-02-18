@@ -97,37 +97,38 @@ def averaged_indicator(src, func=None, periods=[2,3,5,8,13,21,34,55,89,144],
     return ind/wgt
 
 
-def get_binance_news(recent=False):
+def get_binance_news(recent=False, fetch=True):
     path = join(expanduser("~"), ".backfolio", "data", "news", "binance.csv")
     articles = pd.DataFrame()
     articles = pd.read_csv(path, index_col=0) if isfile(path) else articles
-
-    all_links = []
-    url = "https://support.binance.com/hc/en-us/sections/115000202591-Latest-News"
-    pages = [1] if recent else range(1, 101)
-    #pages = ["%s?page=%d" % (url, i) for i in pages]
-    for page in pages:
-        print("%s?page=%s" % (url, page))
-        page = requests.get("%s?page=%s" % (url, page))
-        soup = BeautifulSoup(page.text, 'html.parser')
-        links = ["https://support.binance.com%s" % a.get('href')
-                 for a in soup.find_all("a", class_="article-list-link")]
-        if len(links) == 0:
-            break
-        all_links += links
-    all_links = list(set(all_links))
-
-    scraped = [] if articles is None or articles.empty else articles.url.tolist()
-    remaining = [link for link in all_links if link not in scraped]
-
     new_articles = []
-    for url in remaining:
-        print(url)
-        page = BeautifulSoup(requests.get(url).text, 'html.parser')
-        timestamp = pd.to_datetime(page.find("time").get("datetime"))
-        title = page.find("h1", class_="article-title").text.strip()
-        content = page.find("div", class_="article-body")
-        new_articles.append(dict(url=url, timestamp=timestamp, title=title, content=content))
+
+    if fetch:
+        all_links = []
+        url = "https://support.binance.com/hc/en-us/sections/115000202591-Latest-News"
+        pages = [1] if recent else range(1, 101)
+        #pages = ["%s?page=%d" % (url, i) for i in pages]
+        for page in pages:
+            print("%s?page=%s" % (url, page))
+            page = requests.get("%s?page=%s" % (url, page))
+            soup = BeautifulSoup(page.text, 'html.parser')
+            links = ["https://support.binance.com%s" % a.get('href')
+                     for a in soup.find_all("a", class_="article-list-link")]
+            if len(links) == 0:
+                break
+            all_links += links
+        all_links = list(set(all_links))
+
+        scraped = [] if articles is None or articles.empty else articles.url.tolist()
+        remaining = [link for link in all_links if link not in scraped]
+
+        for url in remaining:
+            print(url)
+            page = BeautifulSoup(requests.get(url).text, 'html.parser')
+            timestamp = pd.to_datetime(page.find("time").get("datetime"))
+            title = page.find("h1", class_="article-title").text.strip()
+            content = page.find("div", class_="article-body")
+            new_articles.append(dict(url=url, timestamp=timestamp, title=title, content=content))
 
     df = pd.DataFrame.from_records(new_articles)
     if not df.empty:
