@@ -104,6 +104,7 @@ class ScoringMixin(object):
             data = data[np.isfinite(data[self.weight_col])]
             data = data[data[self.weight_col] > 0]
         elif self.assets:
+            data = self.sorted_data(data)
             data = data[np.isfinite(data[self.score_col])]
             data = data[data[self.score_col] > 0].head(self.assets)
         else:
@@ -111,7 +112,7 @@ class ScoringMixin(object):
             data = data[data[self.score_col] > 0]
         return data
 
-    def rejected_assets(self, data):
+    def rejected_assets(self, data, selected=None):
         """
         By default:
             - Reject all assets with zero,

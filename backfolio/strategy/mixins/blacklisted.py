@@ -1,4 +1,5 @@
 import pandas as pd
+from ...core.utils import fast_xs
 
 
 class BlacklistedMixin(object):
