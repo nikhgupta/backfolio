@@ -24,21 +24,7 @@ class BaseStrategy(object):
 
     def __init__(self):
         self.session_data = []
-        self._selected_symbols = []
         self.session_fields = ['session_data']
-
-    @property
-    def symbols(self):
-        return self._selected_symbols
-
-    @symbols.setter
-    def symbols(self, arr=[]):
-        self._selected_symbols = arr
-
-    def transform_history(self, panel):
-        if self.symbols:
-            panel = panel[self.symbols].dropna(how='all')
-        return panel
 
     def reset(self, context):
         """ Routine to run when trading session is resetted. """
@@ -83,7 +69,47 @@ class BaseStrategy(object):
     def notify(self, *args, **kwargs):
         return self.context.notify(*args, **kwargs)
 
-    @abstractmethod
+    def before_strategy_advice_at_tick(self):
+        return False
+
+    def after_strategy_advice_at_tick(self):
+        return False
+
+    def before_trading_start(self):
+        pass
+
+    def transform_history(self, panel):
+        """
+        This is useful for any vectorized operation on the data as a whole.
+        """
+        return panel
+
+    def transform_tick_data(self, data):
+        return data
+
+    def selected_assets(self, data):
+        return data
+
+    def rejected_assets(self, data):
+        return data
+
+    def before_trading_start(self):
+        pass
+
+    def buying_prices(self, _symbol, data):
+        pass
+
+    def selling_prices(self, _symbol, data):
+        pass
+
+    def set_required_equity_for_each_asset(self):
+        return 1/len(self.data)
+
+    def before_summary_report(self):
+        """ Syntactic sugar to add a newline before printing summary. """
+        if self.context.debug:
+            print()
+
     def advice_investments_at_tick(self, _tick_event):
         """ Advice investment for assets """
         raise NotImplementedError("Strategy must implement \
@@ -127,4 +153,3 @@ class BaseStrategy(object):
                             limit_price=None, max_cost=0, side=None):
         return self._order_target(symbol, quantity, 'SHARE',
                                   order_type, limit_price, max_cost, side)
-
