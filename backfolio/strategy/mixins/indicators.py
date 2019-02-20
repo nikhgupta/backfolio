@@ -39,13 +39,13 @@ class IndicatorsMixin(object):
         return trend / len(self._indicator_periods) * 100
 
     def indicator__drop(self, src, pr=-1, **kwargs):
-        return averaged_indicator(src.apply(lambda x: x.dropna()),
+        return averaged_indicator(src,
             func=lambda x,p: -x.pct_change(p), pr=pr, **kwargs)
 
     def indicator__revertness(self, src, pr=-1, **kwargs):
-        return averaged_indicator(src.apply(lambda x: x.dropna()),
+        return averaged_indicator(src,
             func=lambda x,p: x.rolling(p).mean()/x-1, pr=pr, **kwargs)
 
     def indicator__dca_loss(self, src, pr=-1, **kwargs):
-        return averaged_indicator(src.apply(lambda x: x.dropna()),
+        return averaged_indicator(src,
             func=lambda x,p: -x*(1/x).rolling(p).sum(), pr=pr, **kwargs)
