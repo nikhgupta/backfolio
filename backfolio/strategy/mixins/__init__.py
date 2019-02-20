@@ -6,3 +6,4 @@ from .order_size import OrderSizeMixin
 from .order_markup import OrderMarkupMixin
 from .money import MoneyManagementMixin
 from .notifier import NotifierMixin
+from .indicators import IndicatorsMixin

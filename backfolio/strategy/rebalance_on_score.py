@@ -10,7 +10,7 @@ from .mixins import *
 
 class RebalanceOnScoreStrategy(
         StateMixin, MoneyManagementMixin, ScoringMixin, BlacklistedMixin,
-        OrderMarkupMixin, OrderSizeMixin, RebalancingScheduleMixin,
+        IndicatorsMixin, OrderMarkupMixin, OrderSizeMixin, RebalancingScheduleMixin,
         DataCleanerMixin, SelectedSymbolsMixin, NotifierMixin, BaseStrategy):
     """
     Strategy that buy top scoring assets, and sells other assets
@@ -166,7 +166,7 @@ class RebalanceOnScoreStrategy(
         if not self.aggressive:
             return True
 
-        if not hasattr(self, "data"):
+        if not hasattr(self, "data") or not hasattr(self, 'selected'):
             return True
 
         if not hasattr(self, 'already_buy'):
