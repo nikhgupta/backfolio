@@ -23,7 +23,7 @@ class IndicatorsMixin(object):
         data = {}
         data[1] = src
         for d in self._indicator_periods:
-            data[d] = src.rolling(d).mean()
+            data[d] = src.rolling(d, min_periods=1).mean()
         self._indicator_cache['averages'] = pd.Panel(data)
         return self._indicator_cache['averages']
 
@@ -44,8 +44,8 @@ class IndicatorsMixin(object):
 
     def indicator__revertness(self, src, pr=-1, **kwargs):
         return averaged_indicator(src,
-            func=lambda x,p: x.rolling(p).mean()/x-1, pr=pr, **kwargs)
+            func=lambda x,p: x.rolling(p, min_periods=1).mean()/x-1, pr=pr, **kwargs)
 
     def indicator__dca_loss(self, src, pr=-1, **kwargs):
         return averaged_indicator(src,
-            func=lambda x,p: -x*(1/x).rolling(p).sum(), pr=pr, **kwargs)
+            func=lambda x,p: -x*(1/x).rolling(p, min_periods=1).sum(), pr=pr, **kwargs)

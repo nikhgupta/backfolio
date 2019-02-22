@@ -81,77 +81,47 @@ class RebalanceOnScoreStrategy(
         # provided they are worth atleast 1% above the threshold.
         # If the asset is the one in which commission is being deducted,
         # ensure that we have it at a fixed percent of equity all the time.
+        self.replenish_commission_asset_equity(equity, at=1/2)
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
             if (symbol in rejected.index and
                     symbol in data.index and symbol not in selected.index):
                 asset_data = fast_xs(data, symbol)
-                if asset_equity > asset_data['required_equity']/100 and asset_equity > 1e-2:
-                    n, prices = 0, self.selling_prices(symbol, asset_data)
-                    N = asset_equity/self.account.equity*100
-                    if asset == self.context.commission_asset:
-                        n = self.min_commission_asset_equity
-                    if prices:
-                        for price in prices:
-                            x = (n-N)/len(prices)
-                            self.order_percent(symbol, x, price, relative=True, side='SELL')
-                    else:
-                        self.order_percent(symbol, n, side='SELL')
-                elif asset_equity > asset_data['required_equity']/100 and asset_equity > 1e-3:
-                    n, prices = 0, self.selling_prices(symbol, asset_data)
-                    if asset != self.context.commission_asset:
-                        if prices:
-                            self.order_percent(symbol, 0, prices[-1], side='SELL')
-                        else:
-                            self.order_percent(symbol, 0, side='SELL')
+                amount, percent = self.modify_order(asset, asset_data)
+                if asset_equity > 1e-2:
+                    self.sell_asset(asset, asset_equity, asset_data, symbol,
+                                    amount=amount, percent=percent)
+                elif asset_equity > 1e-3:
+                    self.sell_asset(asset, asset_equity, asset_data, symbol,
+                                    amount=amount, percent=percent,
+                                    orders=1, when=(
+                                        asset != self.context.commission_asset))
 
-        self.replenish_commission_asset_equity(equity, at=1/2)
         # next, sell assets that have higher equity first
+        self.replenish_commission_asset_equity(equity, at=1/2)
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
             if symbol not in selected.index:
                 continue
             asset_data = fast_xs(data, symbol)
             if asset_equity > asset_data['required_equity'] and asset_equity > 1e-3:
-                prices = self.selling_prices(symbol, asset_data)
-                n = asset_data[self.weight_col] * 100
-                N = asset_equity/self.account.equity*100
-                if asset == self.context.commission_asset:
-                    n = max(self.min_commission_asset_equity, n)
-                if prices:
-                    for price in prices:
-                        x = (n-N)/len(prices)
-                        self.order_percent(symbol, x, price, side='SELL', relative=True)
-                else:
-                    self.order_percent(symbol, n, side='SELL')
+                amount, percent = self.modify_order(asset, asset_data,
+                    'rebalance_sell', asset_data[self.weight_col] * 100)
+                self.sell_asset(asset, asset_equity, asset_data, symbol,
+                                amount=amount, percent=percent)
 
-        self.replenish_commission_asset_equity(equity, at=1/2)
         # finally, buy assets that have lower equity now
+        self.replenish_commission_asset_equity(equity, at=1/2)
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
             if symbol not in selected.index:
                 continue
             asset_data = fast_xs(data, symbol)
             if asset_equity < asset_data['required_equity']:
-                prices = self.buying_prices(symbol, asset_data)
-                n = asset_data[self.weight_col] * 100
-                N = asset_equity/self.account.equity*100
-                diff = n*self.account.equity/100 - asset_equity
-                if (asset == self.context.commission_asset and
-                        asset_equity < self.min_commission_asset_equity*current_equity/100):
-                    self.order_percent(symbol, self.min_commission_asset_equity, side='BUY')
-                    n -= self.min_commission_asset_equity
-                if diff > 0.01:
-                    if prices:
-                        for price in prices:
-                            x = (n-N)/len(prices)
-                            self.order_percent(symbol, x, price, side='BUY', relative=True)
-                    else:
-                        self.order_percent(symbol, n, side='BUY')
-                elif prices:
-                    self.order_percent(symbol, n, prices[-1], side='BUY')
-                else:
-                    self.order_percent(symbol, n, side='BUY')
+                amount, percent = self.modify_order(asset, asset_data,
+                    'buy', asset_data[self.weight_col] * 100)
+                self.buy_asset(asset, asset_equity, asset_data, symbol,
+                               amount=amount, percent=percent)
 
         self.after_strategy_advice_at_tick()
 
@@ -205,21 +175,12 @@ class RebalanceOnScoreStrategy(
                     asset != base_asset and self.already_sell < iterations and
                     symbol in data.index and symbol not in selected.index and
                     remaining >= 1e-3):
-                orig = self.markup_sell
-                self.markup_sell = [
-                    self.markup_sell_func(curr, self.already_sell)
-                    for curr in orig]
-                reprocess = True
                 asset_data = fast_xs(data, symbol)
-                n, prices = 0, self.selling_prices(symbol, asset_data)
-                N = asset_equity/current_equity*100
-                if remaining >= 1e-2:
-                    for price in prices:
-                        x = (n-N)/len(prices)
-                        self.order_percent(symbol, x, price, relative=True)
-                else:
-                    self.order_percent(symbol, 0, prices[-1], relative=True)
-                self.markup_sell = orig
+                amount, percent = self.modify_order(asset, asset_data, iteration=self.already_sell)
+                self.sell_asset(asset, asset_equity, asset_data, symbol,
+                                amount=amount, percent=percent,
+                                markup_multiplier=self.already_sell)
+                reprocess = True
         if reprocess:
             self.already_sell += 1
 
@@ -234,22 +195,19 @@ class RebalanceOnScoreStrategy(
                 if not reprocess:
                     reprocess = False
             else:
-                orig = self.markdn_buy
-                self.markdn_buy = [
-                    self.markdn_buy_func(curr, self.already_buy)
-                    for curr in orig]
                 for symbol in selected.index:
                     if (symbol not in self.data.index or
                             symbol in self.banned.index):
                         continue
-                    asset_data = fast_xs(self.data, symbol)
-                    prices = self.buying_prices(symbol, asset_data)
-                    for price in prices:
-                        weight = len(selected)*len(prices)
-                        self.order_percent(symbol, remaining/weight, price,
-                            side='BUY', relative=True)
+                    asset_data = fast_xs(data, symbol)
+                    amount, percent = self.modify_order(asset, asset_data,
+                        'buy', remaining/len(selected),
+                        iteration=self.already_buy, relative=True)
+                    self.buy_asset(asset, asset_equity, asset_data, symbol,
+                                   amount=amount, percent=percent,
+                                   markdn_multiplier=self.already_buy,
+                                   relative=True)
                 self.already_buy += 1
-                self.markdn_buy = orig
                 reprocess = True
 
         if reprocess:

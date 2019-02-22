@@ -47,3 +47,77 @@ class OrderMarkupMixin(object):
         if self.markdn_buy is not None:
             price = data['price'] if 'price' in data else data['close']
             return [price*(1-x/100) for x in self.markdn_buy]
+
+    def modify_order(self, asset, asset_data, direction='sell',
+            amount=0, percent=100, iteration=1, relative=False):
+        if hasattr(self, "modify_order_placement"):
+            amount, percent = self.modify_order_placement(asset, asset_data,
+                amount, percent, direction, iteration, relative=relative)
+        return (amount, percent)
+
+    def sell_asset(self, asset, asset_equity, asset_data=None, symbol=None,
+                   amount=0, percent=100, orders=None, when=True,
+                   relative=False, markup_multiplier=1):
+        if not when:
+            return
+
+        if hasattr(self, "min_commission_asset_equity"):
+            if asset == self.context.commission_asset:
+                amount = max(self.min_commission_asset_equity, amount)
+
+        symbol = symbol if symbol else self.datacenter.assets_to_symbol(asset)
+        asset_data = asset_data if asset_data else fast_xs(self.data, symbol)
+
+        N = asset_equity/self.account.equity*100
+        amount = N - (N-amount)*(percent/100)
+
+        orig = self.markup_sell
+        if markup_multiplier > 1 and hasattr(self, "markup_sell_func"):
+            self.markup_sell = [self.markup_sell_func(curr, markup_multiplier)
+                                for curr in orig]
+        prices = self.selling_prices(symbol, asset_data)
+        prices = prices[-orders:] if orders is not None else prices
+
+        if prices:
+            for price in prices:
+                x = (amount-(0 if relative else N))/len(prices)
+                self.order_percent(symbol, x, price, relative=True, side='SELL')
+        else:
+            self.order_percent(symbol, amount, side='SELL')
+        self.markup_sell = orig
+
+
+    def buy_asset(self, asset, asset_equity, asset_data=None, symbol=None,
+                  amount=0, percent=100, when=True, relative=False,
+                  markdn_multiplier=1):
+        if not when or not amount:
+            return
+
+        amount = amount*percent/100
+        symbol = symbol if symbol else self.datacenter.assets_to_symbol(asset)
+        asset_data = asset_data if asset_data else fast_xs(self.data, symbol)
+
+        N = asset_equity/self.account.equity*100
+        diff = amount*self.account.equity/100 - asset_equity
+
+        orig = self.markdn_buy
+        self.markdn_buy = [self.markdn_buy_func(curr, markdn_multiplier)
+                           for curr in orig]
+        prices = self.buying_prices(symbol, asset_data)
+        orders = None if diff > 1e-3 else 1
+        prices = prices[-orders:] if orders is not None else prices
+        self.markdn_buy = orig
+
+        if hasattr(self, "min_commission_asset_equity"):
+            min_comm = self.min_commission_asset_equity
+            if asset == self.context.commission_asset:
+                if asset_equity < min_comm*self.account.equity/100:
+                    self.order_percent(symbol, min_comm, side='BUY')
+                    amount -= min_comm
+
+        if prices:
+            for price in prices:
+                x = (amount-(0 if relative else N))/len(prices)
+                self.order_percent(symbol, x, price, side='BUY', relative=True)
+        else:
+            self.order_percent(symbol, amount, side='BUY')

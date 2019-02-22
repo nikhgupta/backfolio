@@ -1,6 +1,7 @@
 import re
 import math
 import requests
+import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 from os.path import join, expanduser, isfile
@@ -69,7 +70,7 @@ def alpharank(*dfs, weights=None):
 
 
 def averaged_indicator(src, func=None, periods=[2,3,5,8,13,21,34,55,89,144],
-        freq=1, pr=-1.0, include_one=False, dropna=False):
+        freq=2, pr=-1.0, include_one=False, dropna=False, curve='average'):
     '''
     A function to get average value of an indicator over time.
     For focussing on recent values of indicator, use negative `pr` values.
@@ -83,17 +84,22 @@ def averaged_indicator(src, func=None, periods=[2,3,5,8,13,21,34,55,89,144],
     '''
     if not func:
         raise ValueError("You must provide indicator function.")
-    ind, wgt, src = 0, 0, src.copy()
 
+    ind, wgt, src = 0, 0, src.copy()
     periods = [1] + periods if include_one else periods
     periods = sorted(list(set([int(round(freq*x, 0)) for x in periods])))
 
-    for period in periods:
+    for idx, period in enumerate(periods):
+        mul = period
+        if curve == 'distribution':
+            mul = period if idx < (len(periods)+1)//2 else periods[len(periods)-idx-1]
+
+        mul = abs(mul)**pr*np.sign(mul)
         if dropna:
-            ind += src.apply(lambda x: func(x.dropna(), period))*(period**pr)
+            ind += src.apply(lambda x: func(x.dropna(), period))*mul
         else:
-            ind += func(src, period)*(period**pr)
-        wgt += period**pr
+            ind += func(src, period)*mul
+        wgt += mul
     return ind/wgt
 
 
@@ -135,6 +141,7 @@ def get_binance_news(recent=False, fetch=True):
         df['time'] = pd.to_datetime(df['timestamp'])
         df = df.drop(['timestamp'], axis=1).set_index('time')
     df = pd.concat([articles, df])
+    df.index = pd.to_datetime(df.index)
     df = df.sort_index(ascending=1)[['title', 'url', 'content']]
 
     delisted = df[df['title'].str.lower().str.contains('delist')]
