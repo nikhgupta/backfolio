@@ -310,7 +310,18 @@ class BaseDatacenter(object):
         df.dropna().reset_index().to_csv(path, index=False)
         return df
 
-    def reload_history(self, refresh=True, threaded=None):
+    def save_history(self):
+        for symbol in self.history.axes[0]:
+            path = join(self.data_dir, "%s.csv" % symbol.replace("/", "_"))
+            df = self.history[symbol]
+            df.to_csv(path, index=True)
+        return True
+
+    def reload_history(self, *args, iterable=False, **kwargs):
+        generator = self.reload_history_iterable(*args, **kwargs)
+        return generator if iterable else list(generator)
+
+    def reload_history_iterable(self, refresh=True, threaded=None):
         """ Reload/refresh history for all symbols from disk/exchange. """
         histories = {}
         freq = self.timeframe.replace('m', 'T')
@@ -393,6 +404,7 @@ class BaseDatacenter(object):
                 df.loc[:, :, 'realopen'] = df[:, :,'realopen'].fillna(method='pad')
 
         self._all_data = df
+        return df
 
     def fetch_recent_history_for_symbol(self, symbol, histories, refresh=True, freq='1d'):
         has_data = histories and symbol in histories
