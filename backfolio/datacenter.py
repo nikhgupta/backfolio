@@ -12,6 +12,7 @@ import pyprind
 import requests
 import numpy as np
 import pandas as pd
+from threading import Thread
 
 try:
     import quandl
@@ -309,7 +310,7 @@ class BaseDatacenter(object):
         df.dropna().reset_index().to_csv(path, index=False)
         return df
 
-    def reload_history(self, refresh=True):
+    def reload_history(self, refresh=True, threaded=None):
         """ Reload/refresh history for all symbols from disk/exchange. """
         histories = {}
         freq = self.timeframe.replace('m', 'T')
@@ -344,32 +345,32 @@ class BaseDatacenter(object):
                 self.log("No history data found on this system.")
 
         # download/refresh data for symbols, if required
-        bar = pyprind.ProgPercent(len(self.markets))
+        bar = None
+        if self.debug:
+            bar = pyprind.ProgPercent(len(self.markets))
+
+        threads = []
         for symbol in self.markets:
             if self.debug:
                 bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
 
-            has_data = histories and symbol in histories
-            if has_data and not refresh:
-                continue
+            if threaded and len(threads) >= threaded:
+                for process in threads:
+                    process.join()
+                threads = []
 
-            cdf = histories[symbol] if has_data else None
-            to_time = pd.to_datetime(datetime.utcnow()).floor(freq)
-            if cdf is not None and not cdf.empty and cdf.index[-1] >= to_time:
-                continue
+            if threaded and len(threads) < threaded:
+                process = Thread(target=self.fetch_recent_history_for_symbol,
+                                 args=[symbol, histories, refresh, freq])
+                process.start()
+                threads.append(process)
+            else:
+                self.fetch_recent_history_for_symbol(
+                    symbol, histories, refresh=refresh, freq=freq)
 
-            try:
-                cdf = self.refresh_history_for_symbol(symbol, cdf)
-            except Exception as e:
-                print(e)
-                self.log("Encountered error when downloading data \
-                                  for symbol %s:\n%s" % (symbol, str(e)))
-                cdf = None
-
-            if cdf is not None and cdf.empty:
-                print("No data loaded for %s" % symbol)
-            elif cdf is not None:
-                histories[symbol] = cdf
+        for process in threads:
+            process.join()
+        threads = []
 
         # finally, save the data so obtained as a panel for quick ref.
         self._all_data = {}
@@ -390,6 +391,30 @@ class BaseDatacenter(object):
                 df.loc[:, :, 'realopen'] = df[:, :,'realopen'].fillna(method='pad')
 
         self._all_data = df
+
+    def fetch_recent_history_for_symbol(self, symbol, histories, refresh=True, freq='1d'):
+        has_data = histories and symbol in histories
+        if has_data and not refresh:
+            return True
+
+        cdf = histories[symbol] if has_data else None
+        to_time = pd.to_datetime(datetime.utcnow()).floor(freq)
+        if cdf is not None and not cdf.empty and cdf.index[-1] >= to_time:
+            return True
+
+        try:
+            cdf = self.refresh_history_for_symbol(symbol, cdf)
+        except Exception as e:
+            print(e)
+            self.log("Encountered error when downloading data \
+                                for symbol %s:\n%s" % (symbol, str(e)))
+            cdf = None
+
+        if cdf is not None and cdf.empty:
+            print("No data loaded for %s" % symbol)
+        elif cdf is not None:
+            histories[symbol] = cdf
+        return True
 
 
 class CryptocurrencyDatacenter(BaseDatacenter):
