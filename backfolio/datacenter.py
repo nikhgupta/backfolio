@@ -321,7 +321,7 @@ class BaseDatacenter(object):
         generator = self.reload_history_iterable(*args, **kwargs)
         return generator if iterable else list(generator)
 
-    def reload_history_iterable(self, refresh=True, threaded=None):
+    def reload_history_iterable(self, refresh=True, threaded=8):
         """ Reload/refresh history for all symbols from disk/exchange. """
         histories = {}
         freq = self.timeframe.replace('m', 'T')

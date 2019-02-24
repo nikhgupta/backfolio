@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-__version__ = '1.7.7'
+__version__ = '1.7.8'
 
 requirements = [
         'Click>=6.0',

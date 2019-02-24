@@ -100,15 +100,16 @@ class ScoringMixin(object):
             - Select top N assets, if `assets` is specified.
         """
         data = super().selected_assets(data)
+        data = data.dropna(how='all')
         if self.weighted and "weight" in data.columns:
-            data = data[np.isfinite(data[self.weight_col])]
+            data = data[np.isfinite(data[self.weight_col].astype(float))]
             data = data[data[self.weight_col] > 0]
         elif self.assets:
             data = self.sorted_data(data)
-            data = data[np.isfinite(data[self.score_col])]
+            data = data[np.isfinite(data[self.score_col].astype(float))]
             data = data[data[self.score_col] > 0].head(self.assets)
         else:
-            data = data[np.isfinite(data[self.score_col])]
+            data = data[np.isfinite(data[self.score_col].astype(float))]
             data = data[data[self.score_col] > 0]
         return data
 
