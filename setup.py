@@ -11,7 +11,23 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=6.0', ]
+__version__ = '1.7.4'
+
+requirements = [
+        'Click>=6.0',
+        'beautifulsoup4==4.6.3',
+        'ccxt==1.17.485',
+        'empyrical==0.5.0',
+        'matplotlib==3.0.1',
+        'pandas==0.23.4',
+        'pandas-datareader==0.7.0',
+        'requests==2.20.1',
+        'scikit-learn==0.20.0',
+        'scipy==1.1.0',
+        'TA-Lib==0.4.17',
+        'tabulate==0.8.2',
+        'numpy==1.16',
+        'pyprind']
 
 setup_requirements = ['pytest-runner', ]
 
@@ -44,11 +60,12 @@ setup(
     include_package_data=True,
     keywords='backfolio',
     name='backfolio',
-    packages=find_packages(include=['backfolio']),
+    packages=find_packages(include=['backfolio', 'backfolio.core',
+        'backfolio.strategy', 'backfolio.strategy.mixins']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/nikhgupta/backfolio',
-    version='1.3.0',
+    version=__version__,
     zip_safe=False,
 )
