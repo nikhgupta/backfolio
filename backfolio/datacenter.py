@@ -350,9 +350,11 @@ class BaseDatacenter(object):
             bar = pyprind.ProgPercent(len(self.markets))
 
         threads = []
-        for symbol in self.markets:
+        for idx, symbol in enumerate(self.markets):
             if self.debug:
                 bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
+
+            yield(symbol, idx+1, len(self.markets))
 
             if threaded and len(threads) >= threaded:
                 for process in threads:
