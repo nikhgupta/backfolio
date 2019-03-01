@@ -72,7 +72,7 @@ class OrderMarkupMixin(object):
         amount = N - (N-amount)*(percent/100)
 
         orig = self.markup_sell
-        if markup_multiplier > 1 and hasattr(self, "markup_sell_func"):
+        if orig and markup_multiplier > 1 and hasattr(self, "markup_sell_func"):
             self.markup_sell = [self.markup_sell_func(curr, markup_multiplier)
                                 for curr in orig]
         prices = self.selling_prices(symbol, asset_data)
@@ -101,8 +101,9 @@ class OrderMarkupMixin(object):
         diff = amount*self.account.equity/100 - asset_equity
 
         orig = self.markdn_buy
-        self.markdn_buy = [self.markdn_buy_func(curr, markdn_multiplier)
-                           for curr in orig]
+        if orig and markdn_multiplier > 1 and hasattr(self, 'markdn_buy_func'):
+            self.markdn_buy = [self.markdn_buy_func(curr, markdn_multiplier)
+                            for curr in orig]
         prices = self.buying_prices(symbol, asset_data)
         orders = None if diff > 1e-3 else 1
         prices = prices[-orders:] if orders is not None else prices
