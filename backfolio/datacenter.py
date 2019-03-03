@@ -362,9 +362,6 @@ class BaseDatacenter(object):
 
         threads = []
         for idx, symbol in enumerate(self.markets):
-            if self.debug:
-                bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
-
             yield(symbol, idx+1, len(self.markets))
 
             if threaded and len(threads) >= threaded:
@@ -380,6 +377,9 @@ class BaseDatacenter(object):
             else:
                 self.fetch_recent_history_for_symbol(
                     symbol, histories, refresh=refresh, freq=freq)
+
+            if self.debug:
+                bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
 
         for process in threads:
             process.join()

@@ -60,9 +60,9 @@ class StateMixin(object):
 
 
 class SelectedSymbolsMixin(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, symbols=[], **kwargs):
         super().__init__(*args, **kwargs)
-        self._selected_symbols = []
+        self._selected_symbols = symbols
 
     @property
     def symbols(self):
