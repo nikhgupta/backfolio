@@ -72,10 +72,13 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
         # ensure that we have it at a fixed percent of equity all the time.
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
+
             if (symbol in rejected.index and
                     symbol in data.index and symbol not in selected.index):
                 asset_data = fast_xs(data, symbol)
-                if asset_equity > asset_data['required_equity']/100 and asset_equity > 1e-2:
+                if ((np.isnan(asset_data['required_equity']) or
+                        asset_equity > asset_data['required_equity']/100) and
+                        asset_equity > 1e-2):
                     n, prices = 0, self.selling_prices(symbol, asset_data)
                     N = asset_equity/self.account.equity*100
                     if asset == self.context.commission_asset:
@@ -85,7 +88,7 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                             x = (n-N)/len(prices)
                             self.order_percent(symbol, x, price, relative=True, side='SELL')
                     else:
-                        self.order_percent(symbol, n, side='SELL')
+                        self.order_percent(symbol, (n-N), side='SELL', relative=True)
                 elif asset_equity > asset_data['required_equity']/100 and asset_equity > 1e-3:
                     n, prices = 0, self.selling_prices(symbol, asset_data)
                     if asset != self.context.commission_asset:
@@ -100,7 +103,7 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
             if symbol not in selected.index:
                 continue
             asset_data = fast_xs(data, symbol)
-            if asset_equity > asset_data['required_equity'] and asset_equity > 1e-3:
+            if (asset_equity > asset_data['required_equity'] and asset_equity > 1e-3):
                 prices = self.selling_prices(symbol, asset_data)
                 n = asset_data['weight'] * 100
                 N = asset_equity/self.account.equity*100
