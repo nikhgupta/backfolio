@@ -229,8 +229,12 @@ def get_binance_news(recent=False):
 
     new_articles = []
     for url in remaining:
-        print(url)
-        page = BeautifulSoup(requests.get(url).text, 'html.parser')
+        page = requests.get(url)
+        if page.status_code == 404:
+            continue
+        page = BeautifulSoup(page.text, 'html.parser')
+        if not page.find("time"):
+            continue
         timestamp = pd.to_datetime(page.find("time").get("datetime"))
         title = page.find("h1", class_="article-title").text.strip()
         content = page.find("div", class_="article-body")

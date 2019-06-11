@@ -379,6 +379,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         if "weight" not in data.columns:
             data['weight'] = 0
             data.loc[selected.index, 'weight'] = 1
+        else:
+            data.loc[~data.index.isin(selected.index), 'weight'] = 0
         data['weight'] /= data['weight'].sum()
 
         # if commission_asset falls to 50% of its required minimum,
