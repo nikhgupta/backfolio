@@ -10,8 +10,11 @@ from .rebalance_on_score_split_orders import RebalanceOnScoreSplitOrders
 
 class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):
     def __init__(self, *args, markdn_buy_func=None, markup_sell_func=None,
-            **kwargs):
+            max_buy_loop=10, max_sell_loop=10, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.max_buy_loop = max_buy_loop
+        self.max_sell_loop = max_sell_loop
 
         if markdn_buy_func is not None:
             self.markdn_buy_func  = markdn_buy_func
@@ -48,8 +51,8 @@ class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):
             symbol = self._symbols[asset]
             rem = self.account.free[asset]/self.account.total[asset]*asset_equity if self.account.total[asset] >= 1e-8 else 0
             if (symbol in rejected.index and asset != self.context.commission_asset and
-                    asset != self.context.base_currency and self.already_sell < 10 and
-                    symbol in data.index and symbol not in selected.index and rem >= 1e-3 and self.already_sell < 10):
+                    asset != self.context.base_currency and self.already_sell < self.max_sell_loop and
+                    symbol in data.index and symbol not in selected.index and rem >= 1e-3):
                 orig = self.markup_sell
                 self.markup_sell = [self.markup_sell_func(curr, self.already_sell)
                                     for curr in orig]
@@ -72,7 +75,7 @@ class RebalanceOnScoreSplitOrdersAggressiveBuySell(RebalanceOnScoreSplitOrders):
         rem = self.account.free[self.context.base_currency]/act_eq*100
         comm_eq = self.portfolio.equity_per_asset[self.context.commission_asset]
         min_comm = self.account.equity/100*self.min_commission_asset_equity
-        if rem > 1 and self.already_buy < 10:
+        if rem > 1 and self.already_buy < self.max_buy_loop:
             if comm_eq > min_comm/2:
                 if len(selected) == 0:
                     if not reprocess:

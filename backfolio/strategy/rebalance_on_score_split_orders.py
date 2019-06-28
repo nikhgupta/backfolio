@@ -178,11 +178,15 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
                 advice.side = "SELL"
                 if price:
                     price = self.selling_prices(
-                        advice.symbol(self), {"price": advice.last_price})[0]
+                        advice.symbol(self), {"price": advice.last_price})
+                if price:
+                    price = price[0]
 
             elif advice.is_sell and cost > 0 and abs(cost) < th:
                 advice.side = "BUY"
                 if price:
                     price = self.buying_prices(
-                        advice.symbol(self), {"price": advice.last_price})[0]
+                        advice.symbol(self), {"price": advice.last_price})
+                if price:
+                    price = price[0]
         return (cost, quantity, price)

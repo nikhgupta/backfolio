@@ -628,3 +628,84 @@ class QuandlDatacenter(BaseDatacenter):
                                   "Adj. Volume": "volume"})
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
+
+
+class BinanceDatacenter(CryptocurrencyDatacenter):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, exchange='binance', **kwargs)
+
+    @property
+    def name(self):
+        return "binance/%s" % self.timeframe
+
+    def get_ohlcv(self, symbol, timeframe='1h', till=None):
+        url = "https://api.binance.com/api/v1/klines?symbol=%s&limit=1000&interval=%s"
+        url = url % (self._market_data[symbol]['id'], timeframe)
+        if till:
+            url += "&endTime=%s" % till
+        return requests.get(url).json()
+
+    def refresh_history_for_symbol(self, symbol, cdf=None):
+        """ Refresh history for a given asset from exchange """
+        plen = 0
+        if len(self._market_data) == 0:
+            self.load_markets()
+        last_timestamp = None
+        col_list = ['time', 'open', 'high', 'low', 'close', 'volume',
+                    'close_time', 'quote_volume', 'trades', 'buy_volume', 'buy_quote_volume', '_ignore']
+        if cdf is None:
+            cdf = pd.DataFrame(columns=col_list).set_index('time')
+
+        while True:
+            data = self.get_ohlcv(symbol, timeframe=self.timeframe, till=last_timestamp)
+
+            df = pd.DataFrame(data, columns=col_list)
+            df['time'] = pd.to_datetime(df['time'], unit='ms')
+            df = df.sort_values(by='time', ascending=1).set_index('time')
+            cdf = cdf.append(df)
+            cdf = cdf[~cdf.index.duplicated(keep='last')]
+            cdf = cdf.sort_index(ascending=1)
+            if (df.empty or len(cdf) == plen or self.history_limit is None or
+                    len(cdf) >= self.history_limit or
+                    (self.context and not self.context.backtesting())):
+                break
+
+            plen = len(cdf)
+            last_timestamp = int(cdf.index[0].timestamp()*1000)
+
+        return self._cleanup_and_save_symbol_data(symbol, cdf)
+
+    def _sanitize_ohlcv(self, df):
+        if df.empty:
+            return df
+
+        if self.realign:
+            freq = self.timeframe.replace('m', 'T')
+            df = df.groupby(pd.Grouper(freq=freq)).last()
+
+        df = df.drop(columns=['_ignore', 'close_time'])
+
+        if self.fill:
+            df['volume'] = df['volume'].fillna(0.0)
+            df['close'] = df['close'].fillna(method='pad')
+            df['open'] = df['open'].fillna(df['close'])
+            df['low'] = df['low'].fillna(df['close'])
+            df['high'] = df['high'].fillna(df['close'])
+            #df['close_time'] = df['close_time'].fillna(method='pad')
+            df['quote_volume'] = df['quote_volume'].fillna(0.0)
+            df['trades'] = df['trades'].fillna(0.0)
+            df['buy_volume'] = df['buy_volume'].fillna(0.0)
+            df['buy_quote_volume'] = df['buy_quote_volume'].fillna(0.0)
+
+        if self.resample:
+            df = df.resample(self.resample).agg({
+                "open": 'first', 'high': 'max',
+                "low": "min", "close": "last",
+                "volume": 'sum', "buy_volume": 'sum', 'trades': 'sum',
+                "quote_volume": 'sum', "buy_quote_volume": 'sum',
+                # "close_time": 'last'
+            })
+
+        df = df.rename(columns=dict(buy_volume='bv', quote_volume='qv', buy_quote_volume='bqv'))
+
+        return df

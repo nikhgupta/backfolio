@@ -15,6 +15,7 @@ from .portfolio import BasePortfolio
 from .account import SimulatedAccount, CcxtExchangeAccount
 from .trading_session import BacktestSession, LiveTradingSession
 from .datacenter import *
+from .datacenter import BinanceDatacenter as BinanceDC
 from .datacenter import CryptocurrencyDatacenter as CryptoDC
 from .broker import SimulatedBroker, CcxtExchangeBroker
 from .notifier import FileLogger, SlackNotifier
@@ -29,7 +30,7 @@ from .reporter import (
 
 def ccxt_backtest(strat, start_time=None, end_time=None,
                   timeframe='1h', exchange='bittrex', resample=None,
-                  refresh=False, slippage=True, run=True,
+                  refresh=False, slippage=True, run=True, prefer_ccxt=True,
                   balance={"BTC": 1}, initial_capital=None, commission=0.25,
                   benchmarks=False, debug=True, doprint=True, plots=True,
                   before_run=None, log_axis=False, each_tick=False):
@@ -40,6 +41,8 @@ def ccxt_backtest(strat, start_time=None, end_time=None,
 
     pf.commission = commission
     pf.datacenter = CryptoDC(exchange, timeframe, resample=resample)
+    if exchange == 'binance' and not prefer_ccxt:
+        pf.datacenter = BinanceDC(timeframe=timeframe, resample=resample)
     pf.portfolio = BasePortfolio()
     pf.broker = SimulatedBroker()
     pf.account = SimulatedAccount(
@@ -91,8 +94,8 @@ def bittrex_backtest(*args, **kwargs):
     return ccxt_backtest(*args, **kwargs)
 
 
-def ccxt_live(name, session, strat, cred, slack_url,
-              timeframe='1h', exchange='bittrex', poll_frequency=None,
+def ccxt_live(name, session, strat, cred, slack_url, prefer_ccxt=True,
+              timeframe='1h', exchange='bittrex', poll_frequency=None, resample=None,
               debug=True, slippage=True, commission=0.25, report=True):
     """
     Run trading bot in live mode with a given name and session.
@@ -103,7 +106,9 @@ def ccxt_live(name, session, strat, cred, slack_url,
     pf.commission = commission
 
     pf.portfolio = BasePortfolio()
-    pf.datacenter = CryptoDC(exchange, timeframe)
+    pf.datacenter = CryptoDC(exchange, timeframe, resample=resample)
+    if exchange == 'binance' and not prefer_ccxt:
+        pf.datacenter = BinanceDC(timeframe=timeframe, resample=resample)
 
     if cred is None:
         cred = {'apiKey': os.environ['%s_API_KEY' % exchange.upper()],
