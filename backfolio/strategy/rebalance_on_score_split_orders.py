@@ -28,6 +28,9 @@ class RebalanceOnScoreSplitOrders(RebalanceOnScoreStrategy):
         if self.data.empty:
             return
 
+        if hasattr(self, "init_strategy_advice_at_tick"):
+            self.init_strategy_advice_at_tick()
+
         # increase number of assets if cash allows so.
         self.increase_assets_if_required()
 

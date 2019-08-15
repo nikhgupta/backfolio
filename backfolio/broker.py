@@ -4,7 +4,7 @@ from math import isnan
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
 from .core.utils import fast_xs, comp8
-from .core.object import Order
+from .core.object import Order, CcxtLiveOrder
 from ccxt.base.errors import InsufficientFunds, OrderNotFound
 
 
@@ -426,7 +426,7 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
     def get_slippage(self, _advice, _direction):
         return 0
 
-    def cancel_pending_orders(self, symbol=None):
+    def cancel_pending_orders(self, symbol=None, refresh=False):
         """
         API calls made to obtain pending orders without a symbol is
         throttled in general.
@@ -435,6 +435,10 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         For example, on binance this call is rate-limited to 1 per 154sec.
         """
         orders = self.portfolio.orders
+        if refresh:
+            self.exchange.options["warnOnFetchOpenOrdersWithoutSymbol"] = False
+            orders = [CcxtLiveOrder(**o) for o in self.exchange.fetch_open_orders()]
+
         for idx, order in enumerate(orders):
             if not order.id or isnan(order.id) or not order.is_open:
                 continue

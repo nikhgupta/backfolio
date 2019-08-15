@@ -684,6 +684,8 @@ class BinanceDatacenter(CryptocurrencyDatacenter):
             df = df.groupby(pd.Grouper(freq=freq)).last()
 
         df = df.drop(columns=['_ignore', 'close_time'])
+        for col in df.columns:
+            df[col] = df[col].astype(float)
 
         if self.fill:
             df['volume'] = df['volume'].fillna(0.0)
