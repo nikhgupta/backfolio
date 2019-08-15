@@ -312,23 +312,34 @@ class Order:
 
 
 class CcxtLiveOrder(Order):
-    def __init__(self, **entries):
-        self.__dict__.update(entries)
+    def __init__(self, entries):
+        self.info = entries
 
+    @property
+    def id(self):
+        return int(self.info['id'])
+
+    @property
     def is_open(self):
-        return self.status == "open"
+        return self.info['status'] == "open"
 
     def symbol(self, broker):
-        return self.symbol
+        return self.info['symbol']
 
-    def mark_cancelled(self):
+    def mark_cancelled(self, broker):
         pass
 
+    @property
+    def side(self):
+        return self.info['side']
+
+    @property
     def asset(self):
         return self.symbol.split("/")[0]
 
+    @property
     def fill_price(self):
-        return self.price
+        return self.info['price']
 
 
 class OrderGroup:

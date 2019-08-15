@@ -437,7 +437,8 @@ class CcxtExchangeBroker(CcxtExchangePaperBroker):
         orders = self.portfolio.orders
         if refresh:
             self.exchange.options["warnOnFetchOpenOrdersWithoutSymbol"] = False
-            orders = [CcxtLiveOrder(**o) for o in self.exchange.fetch_open_orders()]
+            orders = [CcxtLiveOrder(o) for o in self.exchange.fetch_open_orders()]
+            print("INFO: Cancelling all current orders due to session change.")
 
         for idx, order in enumerate(orders):
             if not order.id or isnan(order.id) or not order.is_open:

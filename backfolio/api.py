@@ -96,7 +96,8 @@ def bittrex_backtest(*args, **kwargs):
 
 def ccxt_live(name, session, strat, cred, slack_url, prefer_ccxt=True,
               timeframe='1h', exchange='bittrex', poll_frequency=None, resample=None,
-              debug=True, slippage=True, commission=0.25, report=True):
+              debug=True, slippage=True, commission=0.25, report=True,
+              cancel_pending=False):
     """
     Run trading bot in live mode with a given name and session.
     """
@@ -130,6 +131,9 @@ def ccxt_live(name, session, strat, cred, slack_url, prefer_ccxt=True,
     pf.notifiers = [FileLogger(name), SlackNotifier(name, slack_url)]
     pf.strategy = strat
     pf.session = session
+    pf.cancel_pending = cancel_pending
+    print("Current session: %s" % pf.session)
+
     pf.run(report=report)
     return pf
 

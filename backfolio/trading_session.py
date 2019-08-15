@@ -41,6 +41,7 @@ class TradingSession:
         self._end_time = None
         self._current_time = None
         self._consider_limit_filled_on_touch = False
+        self._cancel_pending = False
 
     @property
     def mode(self):
@@ -216,6 +217,14 @@ class TradingSession:
     def current_time(self):
         return self._current_time
 
+    @property
+    def cancel_pending(self):
+        return self._cancel_pending
+
+    @cancel_pending.setter
+    def cancel_pending(self, value):
+        self._cancel_pending = value
+
     def log(self, message):
         if self.debug:
             print(message)
@@ -359,6 +368,9 @@ class TradingSession:
         self._before_trading_start()
         self.portfolio._load_order_groups()
         self._run_hook('before_trading_start')
+        if self.cancel_pending:
+            self.broker.cancel_pending_orders(refresh=True)
+            self.cancel_pending = False
 
         while True:
             self.loop_index += 1
