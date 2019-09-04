@@ -3,6 +3,7 @@
 
 """The setup script."""
 
+import os
 from setuptools import setup, find_packages
 
 with open('README.rst') as readme_file:
@@ -11,7 +12,12 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=6.0', ]
+req = os.path.dirname(os.path.realpath(__file__))
+req = os.path.join(req, "requirements.txt")
+requirements = []
+if os.path.isfile(req):
+    with open(req) as f:
+        requirements = f.read().splitlines()
 
 setup_requirements = ['pytest-runner', ]
 
@@ -44,11 +50,11 @@ setup(
     include_package_data=True,
     keywords='backfolio',
     name='backfolio',
-    packages=find_packages(include=['backfolio']),
+    packages=find_packages(include=['backfolio', 'backfolio.core', 'backfolio.strategy']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/nikhgupta/backfolio',
-    version='1.3.0',
+    version='1.5.8',
     zip_safe=False,
 )
