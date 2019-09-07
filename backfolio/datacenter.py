@@ -63,7 +63,7 @@ class BaseDatacenter(object):
         self.resample = resample
         self.realign = realign
 
-    def reset(self, context=None, root_dir=None):
+    def reset(self, context=None, root_dir=None, suffix=True):
         """ Routine to run when trading session is resetted. """
         self.context = context
         if hasattr(context, "root_dir") and not root_dir:
@@ -72,7 +72,7 @@ class BaseDatacenter(object):
         if not root_dir:
             raise ValueError("You must specify `root_dir` for `reset()`.")
 
-        self._data_dir = join(root_dir, "data", self.name)
+        self._data_dir = join(root_dir, "data", self.name) if suffix else root_dir
         make_path(self._data_dir)
 
         self._data_seen = []
