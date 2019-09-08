@@ -748,20 +748,14 @@ class AggregateDatacenter(CryptocurrencyDatacenter):
         return super().reset(context=context, root_dir=root_dir, suffix=suffix)
         
     def all_symbols(self):
-        market_data = [x for x in super().load_markets() if x.split("/")[1] == self.to_sym]
-        from IPython import embed; embed()
+        market_data = [x for x in self.load_markets() if x.split("/")[1] == self.to_sym]
         if 'BTC/USDT' not in market_data:
             market_data.append('BTC/USDT')
-        market_data.append('MKTAGG/%s' % self.to_sym)
         return market_data
         
     def refresh_history_for_symbol(self, symbol, cdf=None):
-        print(symbol)
         if symbol == 'BTC/USDT' and self.to_sym != 'USDT':
             return self.leader_dc.refresh_history_for_symbol(symbol, cdf)
-        elif symbol == "MKTAGG/%s" % self.to_sym:
-            cdf = self.aggregate_market_data(symbol, cdf)
-            return self._cleanup_and_save_symbol_data(symbol, cdf)
         else:
             return super().refresh_history_for_symbol(symbol, cdf=cdf)
         
@@ -769,27 +763,29 @@ class AggregateDatacenter(CryptocurrencyDatacenter):
         df = self.refresh_history_for_symbol(symbol).reset_index()
         df['asset'], df['quote'] = symbol.split("/")
         df['time'] = pd.to_datetime(df['time'])
-        df['ret'] = df['close']/df['close'].shift(1)*100-100
-        df['usd_volume'] = (df['close'] + df['high'] + df['low'])*df['volume']/3
-        return df
+        df['ret'] = df['close'].shift(-1)/df['close']*100-100
+        df['quote_volume'] = (df['close'] + df['high'] + df['low'])*df['volume']/3
+        return (symbol, df)
+
+    def refresh_history_in_parallel(self, workers=8, markets=[]):
+        if not markets: markets = self.all_symbols()
+        histories = parallel(self.refresh_history_parallelization, list(markets), max_workers=workers)
+        histories.append(("MKTAGG/%s" % self.to_sym, self.aggregate_market_data(histories)))
+        histories = {k[0]: k[1].drop(['ret', 'quote_volume'], axis=1) for k in histories}
+        return histories
         
-    def aggregate_market_data(self, symbol, cdf=None):
-        markets = set(self.all_symbols()) - set(['MKTAGG/%s' % self.to_sym])
-        if self.to_sym != 'USDT':
-            markets -= set(['BTC/USDT'])
-        print(list(markets))
-
-        histories = [self.refresh_history_parallelization(x) for x in markets]
-        # histories = parallel(self.refresh_history_parallelization, list(markets), max_workers=1)
-        data = pd.concat(histories, sort=False);
+    def aggregate_market_data(self, histories):
+        data = pd.concat([x[1] for x in histories], sort=False)
         data = data.sort_values(by=['time', 'asset'], ascending=[True, True])
-
         x = pd.pivot_table(data, values=['ret'], index=['time'], columns='asset')
-        y = pd.pivot_table(data, values=['usd_volume'], index=['time'], columns='asset')
+        y = pd.pivot_table(data, values=['quote_volume'], index=['time'], columns='asset')
         df = pd.DataFrame(dict(ret=x.mean(axis=1), volume=y.mean(axis=1)))
+        df['quote_volume'] = df['volume']
         df['cumret'] = (1+df['ret']/100).cumprod()
         df['open'] = df['cumret'].shift().fillna(1)
-        df['close'] = df['cumret']
+        df['close'] = df['cumret'].ffill()
         df['high'] = df[['close', 'open']].max(axis=1)
         df['low'] = df[['close', 'open']].min(axis=1)
-        return df.drop(['cumret'], axis=1)
+        df['asset'], df['quote'] = "MKTAGG", self.to_sym
+        cdf = df.drop(['cumret'], axis=1)
+        return self._cleanup_and_save_symbol_data("MKTAGG/%s" % self.to_sym, cdf)
