@@ -335,7 +335,7 @@ class CcxtLiveOrder(Order):
 
     @property
     def asset(self):
-        return self.symbol.split("/")[0]
+        return self.info['symbol'].split("/")[0]
 
     @property
     def fill_price(self):
