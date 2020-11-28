@@ -185,7 +185,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         else:
             max_flow = 1
         if self.max_order_size:
-            max_flow = max(max_flow, self.max_order_size)
+            max_flow = min(max_flow, self.max_order_size)
         max_cost = min(max_cost, max_flow) if max_cost else max_flow
         args = ('MARKET', None, max_cost, side)
         if price:
