@@ -15,13 +15,15 @@ import pandas as pd
 try:
     import quandl
 except ModuleNotFoundError:
-    print("QuandlDatacenter will not work. Library missing!")
+    pass
+    # print("QuandlDatacenter will not work. Library missing!")
 
 try:
     from nsetools import Nse
     from yahoofinancials import YahooFinancials
 except:
-    print("NseDatacenter will not work. Library missing!")
+    pass
+    # print("NseDatacenter will not work. Library missing!")
 
 from zipfile import ZipFile
 from abc import ABCMeta, abstractmethod

@@ -3,6 +3,7 @@ import traceback
 from datetime import datetime
 from copy import deepcopy
 from os.path import join, expanduser
+import pandas as pd
 
 from .core.utils import make_path, load_df, save_df
 from .core.queue import (EventQueue, EventQueueEmpty)
@@ -543,6 +544,16 @@ class PaperTradingSession(TradingSession):
         self.session = session
         self.poll_frequency = poll_frequency
 
+    def reset(self):
+        super().reset()
+
+        timediff = pd.to_timedelta(self.datacenter.timeframe*24)
+        self.last_tick_time = last_tick_time = pd.to_datetime(self.datacenter.history.axes[1].values[-1])
+        self.start_time = last_tick_time.strftime("%Y%m%d %H:%M")
+        self.end_time = (last_tick_time + timediff).strftime("%Y%m%d %H:%M")
+
+        return self
+
     @property
     def current_time(self):
         return datetime.now()
@@ -554,22 +565,6 @@ class PaperTradingSession(TradingSession):
     @refresh_history.setter
     def refresh_history(self, _value):
         raise ValueError("History is always refreshed in paper/live mode.")
-
-    @property
-    def start_time(self):
-        return self._start_time
-
-    @start_time.setter
-    def start_time(self, value):
-        raise ValueError("Cannot set start time in paper/live mode.")
-
-    @property
-    def end_time(self):
-        return self._end_time
-
-    @end_time.setter
-    def end_time(self, value):
-        raise ValueError("Cannot set end time in paper/live mode.")
 
     @property
     def session(self):

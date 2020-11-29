@@ -22,10 +22,11 @@ class BaseStrategy(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, min_ticks=0):
         self.session_data = []
         self._selected_symbols = []
         self.session_fields = ['session_data']
+        self.min_ticks = min_ticks
 
     @property
     def symbols(self):
@@ -38,6 +39,12 @@ class BaseStrategy(object):
     def transform_history(self, panel):
         if self.symbols:
             panel = panel[self.symbols].dropna(how='all')
+
+        if self.min_ticks:
+            timediff = pd.to_timedelta(self.datacenter.timeframe*(self.min_ticks+24))
+            start = (pd.to_datetime(self.context.start_time) - timediff).strftime("%Y%m%d %H:%M")
+            panel = panel[:, start:self.context.end_time]
+
         return panel
 
     def reset(self, context):

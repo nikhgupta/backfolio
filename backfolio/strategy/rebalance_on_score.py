@@ -16,7 +16,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
                  max_order_size=0, min_order_size=0.001,
                  flow_period=1, flow_multiplier=2.5,
                  markup_sell=1, markdn_buy=1, reserved_cash=0,
-                 min_commission_asset_equity=3, weighted=False, debug=True):
+                 min_commission_asset_equity=3, weighted=False,
+                 min_ticks=0, debug=True):
         """
         :param rebalance: number of ticks in a rebalancing period
         :param assets: Number of assets strategy should buy.
@@ -41,7 +42,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         :param reserved_cash: (in %) amount of cash wrt total account equity
             to keep in reserve at all times.
         """
-        super().__init__()
+        super().__init__(min_ticks=min_ticks)
         self.rebalance = rebalance
         self.assets = assets
         self.max_assets = max_assets
@@ -55,6 +56,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         self.reserved_cash = reserved_cash
         self.weighted = weighted
         self.debug = debug
+        self.min_ticks = min_ticks
 
         self.session_fields = ['state']
         self._last_rebalance = None
