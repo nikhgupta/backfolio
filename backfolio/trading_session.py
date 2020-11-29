@@ -510,15 +510,18 @@ class TradingSession:
                 break
 
             if counter > 5:
-                self.notify("Could not remove %s asset from open orders or event queue!" % asset)
+                self.notify(
+                    "Could not remove %s asset from open orders or event queue!" % asset)
                 if self.backtesting():
-                    from IPython import embed; embed()
+                    from IPython import embed
+                    embed()
 
-        self.account.free[self.base_currency]  += asset_equity
+        self.account.free[self.base_currency] += asset_equity
         self.account.total[self.base_currency] += asset_equity
         self.account.total[asset] = self.account.locked[asset] = self.account.free[asset] = 0
         if self.debug:
-            print("========= DELISTED COIN: %s | LAST EQUITY: %0.8f ============" % (asset, asset_equity))
+            print("========= DELISTED COIN: %s | LAST EQUITY: %0.8f ============" % (
+                asset, asset_equity))
 
 
 class BacktestSession(TradingSession):

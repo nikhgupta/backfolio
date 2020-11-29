@@ -27,6 +27,7 @@ from zipfile import ZipFile
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from os.path import join, basename, isfile
+import concurrent.futures
 
 from .core.object import Tick
 from .core.utils import make_path
@@ -299,6 +300,34 @@ class BaseDatacenter(object):
         df.dropna().reset_index().to_csv(path, index=False)
         return df
 
+    def refresh_history_worker(self, args):
+        symbol, bar, histories, refresh, freq = args
+        if self.context and self.context.debug:
+            bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
+
+        has_data = histories and symbol in histories
+        if has_data and not refresh:
+            return
+
+        cdf = histories[symbol] if has_data else None
+        to_time = pd.to_datetime(datetime.utcnow()).floor(freq)
+        if cdf is not None and not cdf.empty and cdf.index[-1] >= to_time:
+            return
+
+        try:
+            cdf = self.refresh_history_for_symbol(symbol, cdf)
+        except Exception as e:
+            print(e)
+            self.log("Encountered error when downloading data \
+                                  for symbol %s:\n%s" % (symbol, str(e)))
+            cdf = None
+
+        if cdf is not None and cdf.empty:
+            print("No data loaded for %s" % symbol)
+        elif cdf is not None:
+            histories[symbol] = cdf
+            return (symbol, cdf)
+
     def reload_history(self, refresh=True):
         """ Reload/refresh history for all symbols from disk/exchange. """
         histories = {}
@@ -332,36 +361,17 @@ class BaseDatacenter(object):
 
         # download/refresh data for symbols, if required
         bar = pyprind.ProgPercent(len(self.markets))
-        for symbol in self.markets:
-            if self.context and self.context.debug:
-                bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
 
-            has_data = histories and symbol in histories
-            if has_data and not refresh:
-                continue
-
-            cdf = histories[symbol] if has_data else None
-            to_time = pd.to_datetime(datetime.utcnow()).floor(freq)
-            if cdf is not None and not cdf.empty and cdf.index[-1] >= to_time:
-                continue
-
-            try:
-                cdf = self.refresh_history_for_symbol(symbol, cdf)
-            except Exception as e:
-                print(e)
-                self.log("Encountered error when downloading data \
-                                  for symbol %s:\n%s" % (symbol, str(e)))
-                cdf = None
-
-            if cdf is not None and cdf.empty:
-                print("No data loaded for %s" % symbol)
-            elif cdf is not None:
-                histories[symbol] = cdf
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for res in executor.map(getattr(self, "refresh_history_worker"),
+                         [(i, bar, histories, refresh, freq) for i in self.markets]):
+                if res is not None:
+                    histories[res[0]] = res[1]
 
         # finally, save the data so obtained as a panel for quick ref.
         self._all_data = {}
         for sym, df in histories.items():
-            if symbol not in self.markets:
+            if sym not in self.markets:
                 continue
             self._all_data[sym] = self._sanitize_ohlcv(df)
         df = pd.Panel(self._all_data)
@@ -372,9 +382,11 @@ class BaseDatacenter(object):
             df.loc[:, :, 'low'] = df[:, :, 'low'].fillna(df[:, :, 'close'])
             df.loc[:, :, 'high'] = df[:, :, 'high'].fillna(df[:, :, 'close'])
             if 'realclose' in df.axes[2]:
-                df.loc[:, :, 'realclose'] = df[:, :,'realclose'].fillna(method='pad')
+                df.loc[:, :, 'realclose'] = df[:, :,
+                                               'realclose'].fillna(method='pad')
             if 'realopen' in df.axes[2]:
-                df.loc[:, :, 'realopen'] = df[:, :,'realopen'].fillna(method='pad')
+                df.loc[:, :, 'realopen'] = df[:, :,
+                                              'realopen'].fillna(method='pad')
 
         self._all_data = df
 
@@ -441,7 +453,8 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         """ Refresh history for a given asset from exchange """
         plen = 0
         if self.start_since is not None:
-            last_timestamp = int(datetime.now().timestamp()*1000) - self.start_since
+            last_timestamp = int(datetime.now().timestamp()
+                                 * 1000) - self.start_since
         else:
             last_timestamp = None
         col_list = ['time', 'open', 'high', 'low', 'close', 'volume']
@@ -657,7 +670,8 @@ class BinanceDatacenter(CryptocurrencyDatacenter):
             cdf = pd.DataFrame(columns=col_list).set_index('time')
 
         while True:
-            data = self.get_ohlcv(symbol, timeframe=self.timeframe, till=last_timestamp)
+            data = self.get_ohlcv(
+                symbol, timeframe=self.timeframe, till=last_timestamp)
 
             df = pd.DataFrame(data, columns=col_list)
             df['time'] = pd.to_datetime(df['time'], unit='ms')
@@ -708,6 +722,7 @@ class BinanceDatacenter(CryptocurrencyDatacenter):
                 # "close_time": 'last'
             })
 
-        df = df.rename(columns=dict(buy_volume='bv', quote_volume='qv', buy_quote_volume='bqv'))
+        df = df.rename(columns=dict(buy_volume='bv',
+                                    quote_volume='qv', buy_quote_volume='bqv'))
 
         return df

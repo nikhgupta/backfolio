@@ -28,25 +28,58 @@ from .reporter import (
 )
 
 
+class BinanceUsdtDatacenter(CryptoDC):
+    def __init__(self, *args, limit=10000, params={}, **kwargs):
+        super().__init__('binance', *args, **kwargs)
+        self.to_sym = 'USDT'
+        self.exchange = getattr(ccxt, 'binance')(params)
+        self.history_limit = limit
+        self._market_data = {}
+
+    @property
+    def name(self):
+        return "crypto/%s/%s/pureUSDT" % (self.exchange.name, self.timeframe)
+
+    def load_markets(self):
+        if self.refresh_history:
+            self._market_data = self.exchange.load_markets(True)
+            self._market_data = {k: v for k, v in self._market_data.items()
+                                 if 'LEVERAGED' not in v['info']['permissions']
+                                 and v['info']['quoteAsset'] == 'USDT'}
+        elif self.history is not None:
+            self._market_data = dict(
+                [(k, {}) for k in self.history.axes[0]])
+        else:
+            raise ValueError("You must run with refresh=True to load markets")
+        return self._market_data
+
+
 def ccxt_backtest(strat, start_time=None, end_time=None,
                   timeframe='1h', exchange='bittrex', resample=None,
                   refresh=False, slippage=True, run=True, prefer_ccxt=True,
                   balance={"BTC": 1}, initial_capital=None, commission=0.25,
                   benchmarks=False, debug=True, doprint=True, plots=True,
-                  before_run=None, log_axis=False, each_tick=False):
-    pf = BacktestSession()
+                  before_run=None, log_axis=False, each_tick=False,
+                  base_currency='BTC'):
+    pf = BacktestSession(base_currency=base_currency)
     random.seed(1)
     pf.debug = debug
     pf.refresh_history = refresh
 
     pf.commission = commission
-    pf.datacenter = CryptoDC(exchange, timeframe, resample=resample)
-    if exchange == 'binance' and not prefer_ccxt:
+    pf.datacenter = CryptoDC(
+        exchange, timeframe, resample=resample, to_sym=base_currency)
+
+    if exchange == 'binance' and base_currency == 'USDT':
+        pf.datacenter = BinanceUsdtDatacenter(
+            timeframe=timeframe, resample=resample)
+    elif exchange == 'binance' and not prefer_ccxt:
         pf.datacenter = BinanceDC(timeframe=timeframe, resample=resample)
+
     pf.portfolio = BasePortfolio()
     pf.broker = SimulatedBroker()
     pf.account = SimulatedAccount(
-            initial_balance=balance, initial_capital=initial_capital)
+        initial_balance=balance, initial_capital=initial_capital)
 
     pf.reporters = [
         CashAndEquityReporter(bounds=False, mean=True, plot=plots, period=24*7,
@@ -156,7 +189,8 @@ def quick_bt(history, lookup, top=None, bottom=None, ft=None, tt=None,
     pidx, bar, war = None, {}, {}
     for idx, row in ret.iterrows():
         if pidx:
-            scorers = lookup.loc[pidx].dropna().sort_values(ascending=False).index
+            scorers = lookup.loc[pidx].dropna(
+            ).sort_values(ascending=False).index
             bar[idx] = math.fsum([fast_xs(ret, idx)[asset] - 2*fee/100
                                   for asset in scorers[:top]])
             war[idx] = math.fsum([fast_xs(ret, idx)[asset] - 2*fee/100
@@ -247,7 +281,8 @@ def get_binance_news(recent=False):
         timestamp = pd.to_datetime(page.find("time").get("datetime"))
         title = page.find("h1", class_="article-title").text.strip()
         content = page.find("div", class_="article-body")
-        new_articles.append(dict(url=url, timestamp=timestamp, title=title, content=content))
+        new_articles.append(
+            dict(url=url, timestamp=timestamp, title=title, content=content))
 
     df = pd.DataFrame.from_records(new_articles)
     if not df.empty:
@@ -265,13 +300,13 @@ def get_binance_news(recent=False):
     for row in delisted.to_records():
         m1 = re.findall(r'\b[A-Z]+\b', row.title)
         m2 = [x for x in re.sub(r'(binance|will|delist|and|,)', ' ', row.title,
-                flags=re.I).split(" ") if x]
+                                flags=re.I).split(" ") if x]
         ma = list(set(m1).union(set(m2)))
 
         for coin in ma:
-            z.append(dict(coin=coin, time=row.time, url=row.url, title=row.title))
+            z.append(dict(coin=coin, time=row.time,
+                          url=row.url, title=row.title))
     delisted = pd.DataFrame.from_records(z).set_index('coin').sort_index()
 
     df.to_csv(path, index=True)
     return (delisted, df)
-
