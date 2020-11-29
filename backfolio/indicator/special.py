@@ -1,28 +1,5 @@
 import math
-
-
-def rolling(src, tp, min_periods=None):
-    if not min_periods:
-        min_periods = tp
-    return src.rolling(window=tp, min_periods=min_periods)
-
-
-def stdev(src, tp, min_periods=None):
-    return rolling(src, tp, min_periods).std()
-
-
-def rebase(series):
-    return series/series.dropna().iloc[0]
-
-
-def rank(src):
-    return src.rank(pct=True, axis=0)
-
-
-def ts_rank(src, tp, min_periods=None):
-    def rollrank(data):
-        return (1+data.argsort().argsort()[-1])/len(data)
-    return rolling(src, tp, min_periods).apply(rollrank)
+from .compute import stdev, rolling, rebase
 
 
 def beta(src, mkt, tp, min_periods=None):
@@ -48,8 +25,8 @@ def market_index(panel):
     high = panel[:, :, 'high']
     low = panel[:, :, 'low']
     volume = panel[:, :, 'volume']
-    multiplier = ((close-low)-(high-close))/(high-low)
-    mkt = ((multiplier*volume).fillna(0).cumsum()*close).sum(axis=1)
+    multiplier = ((close - low) - (high - close)) / (high - low)
+    mkt = ((multiplier * volume).fillna(0).cumsum() * close).sum(axis=1)
     mkt = rebase(mkt - mkt.min())
     return mkt
 
@@ -59,12 +36,16 @@ def alpharank(*dfs, weights=None):
     if not weights:
         weights = [1.0 for df in dfs]
     for idx, df in enumerate(dfs):
-        score += weights[idx]*df.rank(axis=1, pct=True)
-    return score/math.fsum(weights)
+        score += weights[idx] * df.rank(axis=1, pct=True)
+    return score / math.fsum(weights)
 
 
-def averaged_indicator(src, func=None, periods=[2,3,5,8,13,21,34,55,89,144],
-        freq=1, pr=1.0, include_one=False):
+def averaged_indicator(src,
+                       func=None,
+                       periods=[2, 3, 5, 8, 13, 21, 34, 55, 89, 144],
+                       freq=1,
+                       pr=1.0,
+                       include_one=False):
     '''
     A function to get average value of an indicator over time.
     For focussing on recent values of indicator, use negative `pr` values.
@@ -80,8 +61,8 @@ def averaged_indicator(src, func=None, periods=[2,3,5,8,13,21,34,55,89,144],
         raise ValueError("You must provide indicator function.")
     if include_one:
         periods = [1] + periods
-    ind, wgt, periods = 0, 0, set([int(round(freq*x, 0)) for x in periods])
+    ind, wgt, periods = 0, 0, set([int(round(freq * x, 0)) for x in periods])
     for pd in periods:
-        ind += func(src, pd)*(pd**pr)
+        ind += func(src, pd) * (pd**pr)
         wgt += pd**pr
-    return ind/wgt
+    return ind / wgt

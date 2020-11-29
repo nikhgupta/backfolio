@@ -35,7 +35,6 @@ from .core.object import Tick
 from .core.utils import make_path
 from .core.event import TickUpdateEvent
 
-
 MAXINT = 2**32 - 1
 
 
@@ -86,8 +85,7 @@ class BaseDatacenter(object):
         self.markets = self._selected_symbols.copy()
         if context:
             self.reload_history(refresh=self.context.refresh_history)
-            if (not self.context.refresh_history and
-                    self.history is None):
+            if (not self.context.refresh_history and self.history is None):
                 raise ValueError("You must run with refresh=True")
         return self
 
@@ -192,7 +190,8 @@ class BaseDatacenter(object):
         """
         Reload/refresh history data for a particular symbol.
         """
-        raise NotImplementedError('Datacenter should allow reloading/refreshing \
+        raise NotImplementedError(
+            'Datacenter should allow reloading/refreshing \
                                   historical data for a particular asset.')
 
     def _next_tick_generator(self):
@@ -211,7 +210,7 @@ class BaseDatacenter(object):
             self._prev_tick = self._current_real
             self._current_real = history.loc[:, ts, :].T.dropna(how='all')
             if self._prev_tick is not None:
-                yield((ts, self._prev_tick))
+                yield ((ts, self._prev_tick))
 
     def recent_frames(self, n=1):
         """
@@ -289,9 +288,13 @@ class BaseDatacenter(object):
         df['volume'] = np.where(df['volume'] > MAXINT, MAXINT, df['volume'])
         if self.resample:
             df = df.resample(self.resample).agg({
-                "open": 'first', 'high': 'max',
-                "low": "min", "close": "last",
-                "volume": 'sum', "dividend": 'mean', "split": 'mean'
+                "open": 'first',
+                'high': 'max',
+                "low": "min",
+                "close": "last",
+                "volume": 'sum',
+                "dividend": 'mean',
+                "split": 'mean'
             })
         return df
 
@@ -303,9 +306,7 @@ class BaseDatacenter(object):
         return df
 
     def refresh_history_worker(self, args):
-        symbol, bar, histories, refresh, freq = args
-        if self.context and self.context.debug:
-            bar.update(item_id="%12s - %4s" % (symbol, self.timeframe))
+        symbol, histories, refresh, freq = args
 
         has_data = histories and symbol in histories
         if has_data and not refresh:
@@ -342,8 +343,8 @@ class BaseDatacenter(object):
             if self._selected_symbols and name not in self._selected_symbols:
                 continue
 
-            if (self.to_sym is not None and self.to_sym.strip() and
-                    name[-len(self.to_sym):] != self.to_sym):
+            if (self.to_sym is not None and self.to_sym.strip()
+                    and name[-len(self.to_sym):] != self.to_sym):
                 continue
 
             data = self._sanitize_index(data)
@@ -361,12 +362,10 @@ class BaseDatacenter(object):
             if not refresh:
                 self.log("No history data found on this system.")
 
-        # download/refresh data for symbols, if required
-        bar = pyprind.ProgPercent(len(self.markets))
-
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for res in executor.map(getattr(self, "refresh_history_worker"),
-                         [(i, bar, histories, refresh, freq) for i in self.markets]):
+                                    [(i, histories, refresh, freq)
+                                     for i in self.markets]):
                 if res is not None:
                     histories[res[0]] = res[1]
 
@@ -384,8 +383,9 @@ class BaseDatacenter(object):
             df.loc[:, :, 'low'] = df[:, :, 'low'].fillna(df[:, :, 'close'])
             df.loc[:, :, 'high'] = df[:, :, 'high'].fillna(df[:, :, 'close'])
             if 'realclose' in df.axes[2]:
-                df.loc[:, :, 'realclose'] = df[:, :,
-                                               'realclose'].fillna(method='pad')
+                df.loc[:, :,
+                       'realclose'] = df[:, :,
+                                         'realclose'].fillna(method='pad')
             if 'realopen' in df.axes[2]:
                 df.loc[:, :, 'realopen'] = df[:, :,
                                               'realopen'].fillna(method='pad')
@@ -394,16 +394,23 @@ class BaseDatacenter(object):
 
 
 class CryptocurrencyDatacenter(BaseDatacenter):
-    def __init__(self, exchange, *args,
-                 to_sym='BTC', limit=100000, per_page_limit=1000,
-                 start_since=None, params={}, reverse=False, **kwargs):
+    def __init__(self,
+                 exchange,
+                 *args,
+                 to_sym='BTC',
+                 limit=100000,
+                 per_page_limit=1000,
+                 start_since=None,
+                 params={},
+                 reverse=False,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.to_sym = to_sym
         self.exchange = getattr(ccxt, exchange)(params)
         self.history_limit = limit
         self.per_page_limit = per_page_limit
         self._market_data = {}
-        self.start_since = start_since*1000 if start_since else None
+        self.start_since = start_since * 1000 if start_since else None
         self.reverse = reverse
 
         if not self.exchange.has['fetchOHLCV']:
@@ -421,8 +428,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         if self.refresh_history:
             self._market_data = self.exchange.load_markets(True)
         elif self.history is not None:
-            self._market_data = dict(
-                [(k, {}) for k in self.history.axes[0]])
+            self._market_data = dict([(k, {}) for k in self.history.axes[0]])
         else:
             raise ValueError("You must run with refresh=True to load markets")
         return self._market_data
@@ -435,8 +441,10 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         self.load_markets()
 
         if self.to_sym is not None and self.to_sym.strip():
-            self.markets = [key for key, _v in self._market_data.items()
-                            if key[-len(self.to_sym):] == self.to_sym]
+            self.markets = [
+                key for key, _v in self._market_data.items()
+                if key[-len(self.to_sym):] == self.to_sym
+            ]
         else:
             if not self._market_data:
                 self.load_markets()
@@ -455,8 +463,8 @@ class CryptocurrencyDatacenter(BaseDatacenter):
         """ Refresh history for a given asset from exchange """
         plen = 0
         if self.start_since is not None:
-            last_timestamp = int(datetime.now().timestamp()
-                                 * 1000) - self.start_since
+            last_timestamp = int(
+                datetime.now().timestamp() * 1000) - self.start_since
         else:
             last_timestamp = None
         col_list = ['time', 'open', 'high', 'low', 'close', 'volume']
@@ -465,9 +473,10 @@ class CryptocurrencyDatacenter(BaseDatacenter):
 
         while True:
             page_limit = None if self.reverse else self.per_page_limit
-            data = self.exchange.fetch_ohlcv(
-                symbol, timeframe=self.timeframe,
-                since=last_timestamp, limit=page_limit)
+            data = self.exchange.fetch_ohlcv(symbol,
+                                             timeframe=self.timeframe,
+                                             since=last_timestamp,
+                                             limit=page_limit)
 
             df = pd.DataFrame(data, columns=col_list)
             df['time'] = pd.to_datetime(df['time'], unit='ms')
@@ -475,25 +484,32 @@ class CryptocurrencyDatacenter(BaseDatacenter):
             cdf = cdf.append(df)
             cdf = cdf[~cdf.index.duplicated(keep='last')]
             cdf = cdf.sort_index(ascending=1)
-            if (df.empty or len(cdf) == plen or self.history_limit is None or
-                    len(cdf) >= self.history_limit or
-                    (self.context and not self.context.backtesting())):
+            if (df.empty or len(cdf) == plen or self.history_limit is None
+                    or len(cdf) >= self.history_limit
+                    or (self.context and not self.context.backtesting())):
                 break
 
             plen = len(cdf)
             if self.reverse:
-                last_timestamp = int((cdf.index[0] - pd.to_timedelta(
-                    len(df) * self.timeframe)).timestamp()*1000)
+                last_timestamp = int(
+                    (cdf.index[0] -
+                     pd.to_timedelta(len(df) * self.timeframe)).timestamp() *
+                    1000)
             else:
                 last_timestamp = int((cdf.index[0] - pd.to_timedelta(
-                    self.per_page_limit * self.timeframe)).timestamp()*1000)
+                    self.per_page_limit * self.timeframe)).timestamp() * 1000)
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
 
 
 class CryptocompareDatacenter(BaseDatacenter):
-    def __init__(self, exchange, *args,
-                 to_sym='BTC', limit=10000, params={}, **kwargs):
+    def __init__(self,
+                 exchange,
+                 *args,
+                 to_sym='BTC',
+                 limit=10000,
+                 params={},
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.to_sym = to_sym
         self.exchange = getattr(ccxt, exchange)(params)
@@ -508,8 +524,7 @@ class CryptocompareDatacenter(BaseDatacenter):
         if self.refresh_history:
             self._market_data = self.exchange.load_markets(True)
         elif self.history is not None:
-            self._market_data = dict(
-                [(k, {}) for k in self.history.axes[0]])
+            self._market_data = dict([(k, {}) for k in self.history.axes[0]])
         else:
             raise ValueError("You must run with refresh=True to load markets")
         return self._market_data
@@ -522,8 +537,10 @@ class CryptocompareDatacenter(BaseDatacenter):
         self.load_markets()
 
         if self.to_sym is not None and self.to_sym.strip():
-            self.markets = [key for key, _v in self._market_data.items()
-                            if key[-len(self.to_sym):] == self.to_sym]
+            self.markets = [
+                key for key, _v in self._market_data.items()
+                if key[-len(self.to_sym):] == self.to_sym
+            ]
         else:
             if not self._market_data:
                 self.load_markets()
@@ -562,14 +579,14 @@ class CryptocompareDatacenter(BaseDatacenter):
             df = pd.DataFrame.from_records(data)
             df['volume'] = df['volumefrom']
             df = df.drop(['volumefrom', 'volumeto'], axis=1)
-            df['time'] = pd.to_datetime(df['time']*1000, unit='ms')
+            df['time'] = pd.to_datetime(df['time'] * 1000, unit='ms')
             df = df.sort_values(by='time', ascending=1).set_index('time')
             cdf = cdf.append(df)
             cdf = cdf[~cdf.index.duplicated(keep='last')]
             cdf = cdf.sort_index(ascending=1)
-            if (df.empty or len(cdf) == plen or self.history_limit is None or
-                    len(cdf) >= self.history_limit or df.volume.sum() == 0 or
-                    (self.context and not self.context.backtesting())):
+            if (df.empty or len(cdf) == plen or self.history_limit is None
+                    or len(cdf) >= self.history_limit or df.volume.sum() == 0
+                    or (self.context and not self.context.backtesting())):
                 break
 
             plen = len(cdf)
@@ -600,8 +617,9 @@ class QuandlDatacenter(BaseDatacenter):
             path = join(self.data_dir, "codes.zip")
             if self.refresh_history or not isfile(path):
                 url = "https://www.quandl.com/api/v3/databases/%s/codes"
-                resp = requests.get(url % self.table, data={
-                    "api_key": self.api_key}, stream=True)
+                resp = requests.get(url % self.table,
+                                    data={"api_key": self.api_key},
+                                    stream=True)
                 with open(path, "wb") as f:
                     for chunk in resp.iter_content(chunk_size=1024):
                         f.write(chunk)
@@ -636,11 +654,16 @@ class QuandlDatacenter(BaseDatacenter):
 
         # cleanup data (while ensuring compatibility with zipline)
         cdf = cdf.drop(["Open", "High", "Low", "Volume", "Close"], axis=1)
-        cdf = cdf.rename(columns={"Ex-Dividend": "dividend",
-                                  "Split Ratio": "split",
-                                  "Adj. Close": "close", "Adj. Open": "open",
-                                  "Adj. High": "high", "Adj. Low": "low",
-                                  "Adj. Volume": "volume"})
+        cdf = cdf.rename(
+            columns={
+                "Ex-Dividend": "dividend",
+                "Split Ratio": "split",
+                "Adj. Close": "close",
+                "Adj. Open": "open",
+                "Adj. High": "high",
+                "Adj. Low": "low",
+                "Adj. Volume": "volume"
+            })
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
 
@@ -666,14 +689,18 @@ class BinanceDatacenter(CryptocurrencyDatacenter):
         if len(self._market_data) == 0:
             self.load_markets()
         last_timestamp = None
-        col_list = ['time', 'open', 'high', 'low', 'close', 'volume',
-                    'close_time', 'quote_volume', 'trades', 'buy_volume', 'buy_quote_volume', '_ignore']
+        col_list = [
+            'time', 'open', 'high', 'low', 'close', 'volume', 'close_time',
+            'quote_volume', 'trades', 'buy_volume', 'buy_quote_volume',
+            '_ignore'
+        ]
         if cdf is None:
             cdf = pd.DataFrame(columns=col_list).set_index('time')
 
         while True:
-            data = self.get_ohlcv(
-                symbol, timeframe=self.timeframe, till=last_timestamp)
+            data = self.get_ohlcv(symbol,
+                                  timeframe=self.timeframe,
+                                  till=last_timestamp)
 
             df = pd.DataFrame(data, columns=col_list)
             df['time'] = pd.to_datetime(df['time'], unit='ms')
@@ -681,13 +708,13 @@ class BinanceDatacenter(CryptocurrencyDatacenter):
             cdf = cdf.append(df)
             cdf = cdf[~cdf.index.duplicated(keep='last')]
             cdf = cdf.sort_index(ascending=1)
-            if (df.empty or len(cdf) == plen or self.history_limit is None or
-                    len(cdf) >= self.history_limit or
-                    (self.context and not self.context.backtesting())):
+            if (df.empty or len(cdf) == plen or self.history_limit is None
+                    or len(cdf) >= self.history_limit
+                    or (self.context and not self.context.backtesting())):
                 break
 
             plen = len(cdf)
-            last_timestamp = int(cdf.index[0].timestamp()*1000)
+            last_timestamp = int(cdf.index[0].timestamp() * 1000)
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
 
@@ -717,14 +744,47 @@ class BinanceDatacenter(CryptocurrencyDatacenter):
 
         if self.resample:
             df = df.resample(self.resample).agg({
-                "open": 'first', 'high': 'max',
-                "low": "min", "close": "last",
-                "volume": 'sum', "buy_volume": 'sum', 'trades': 'sum',
-                "quote_volume": 'sum', "buy_quote_volume": 'sum',
+                "open": 'first',
+                'high': 'max',
+                "low": "min",
+                "close": "last",
+                "volume": 'sum',
+                "buy_volume": 'sum',
+                'trades': 'sum',
+                "quote_volume": 'sum',
+                "buy_quote_volume": 'sum',
                 # "close_time": 'last'
             })
 
-        df = df.rename(columns=dict(buy_volume='bv',
-                                    quote_volume='qv', buy_quote_volume='bqv'))
+        df = df.rename(columns=dict(
+            buy_volume='bv', quote_volume='qv', buy_quote_volume='bqv'))
 
         return df
+
+
+class BinanceUsdtDatacenter(CryptocurrencyDatacenter):
+    def __init__(self, *args, limit=10000, params={}, **kwargs):
+        super().__init__('binance', *args, **kwargs)
+        self.to_sym = 'USDT'
+        self.exchange = getattr(ccxt, 'binance')(params)
+        self.history_limit = limit
+        self._market_data = {}
+
+    @property
+    def name(self):
+        return "crypto/%s/%s/pureUSDT" % (self.exchange.name, self.timeframe)
+
+    def load_markets(self):
+        if self.refresh_history:
+            self._market_data = self.exchange.load_markets(True)
+            self._market_data = {
+                k: v
+                for k, v in self._market_data.items()
+                if 'LEVERAGED' not in v['info']['permissions']
+                and v['info']['quoteAsset'] == 'USDT'
+            }
+        elif self.history is not None:
+            self._market_data = dict([(k, {}) for k in self.history.axes[0]])
+        else:
+            raise ValueError("You must run with refresh=True to load markets")
+        return self._market_data
