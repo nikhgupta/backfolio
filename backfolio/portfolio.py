@@ -20,7 +20,6 @@ class BasePortfolio(object):
     Whether the order that was placed is accepted by the broker is not the
     concern of BasePortfolio object.
     """
-
     def __init__(self):
         self.name = 'portfolio'
 
@@ -41,9 +40,11 @@ class BasePortfolio(object):
         self.last_tick = None
         self.delisted_assets = []
 
-        self.session_fields = ['timeline', 'asset_equity', 'advice_history',
-                               'orders', 'filled_orders', 'rejected_orders',
-                               'unfilled_orders', 'open_orders', 'positions']
+        self.session_fields = [
+            'timeline', 'asset_equity', 'advice_history', 'orders',
+            'filled_orders', 'rejected_orders', 'unfilled_orders',
+            'open_orders', 'positions'
+        ]
         return self
 
     @property
@@ -92,7 +93,8 @@ class BasePortfolio(object):
         elif len(self.timeline):
             equity = self.timeline[-1]['equity']
         else:
-            raise ValueError("Not sure how to calculate equity here. Data missing?")
+            raise ValueError(
+                "Not sure how to calculate equity here. Data missing?")
         if hasattr(self.strategy, 'transform_account_equity'):
             equity = self.strategy.transform_account_equity(equity)
         return equity
@@ -122,19 +124,27 @@ class BasePortfolio(object):
         """
         self.last_tick = tick_event.item
         res = self.last_positions_and_equities_at_tick_open()
-        self.asset_equity.append(
-            {**res['asset_equity'], **{"time": res['time']}})
-        self.positions.append(
-            {**res['positions'], **{"time": res['time']}})
-        self.timeline.append(
-            {**res['summary'], **{"time": res['time']}})
+        self.asset_equity.append({
+            **res['asset_equity'],
+            **{
+                "time": res['time']
+            }
+        })
+        self.positions.append({**res['positions'], **{"time": res['time']}})
+        self.timeline.append({**res['summary'], **{"time": res['time']}})
 
     def last_positions_and_equities_at_tick_open(self, field='open'):
         base = self.context.base_currency
-        resp = {"positions": self.account.total, "asset_equity": {},
-                "time": None, "summary": {
-                   "equity": 0, "cash": self.account.cash,
-                   "total_cash": self.account.total[base]}}
+        resp = {
+            "positions": self.account.total,
+            "asset_equity": {},
+            "time": None,
+            "summary": {
+                "equity": 0,
+                "cash": self.account.cash,
+                "total_cash": self.account.total[base]
+            }
+        }
 
         if self.last_tick is None:
             return resp
@@ -147,7 +157,8 @@ class BasePortfolio(object):
             elif symbol in data.index:
                 price = fast_xs(data.fillna(0), symbol)[field]
                 resp['asset_equity'][asset] = quantity * price
-            elif self.is_holding_delisted_asset(asset, symbol) and len(self.asset_equity):
+            elif self.is_holding_delisted_asset(asset, symbol) and len(
+                    self.asset_equity):
                 if self.context.live_trading():
                     last_equity = 0
                 else:
@@ -159,9 +170,12 @@ class BasePortfolio(object):
             elif len(self.asset_equity) and asset in self.equity_per_asset:
                 resp['asset_equity'][asset] = self.equity_per_asset[asset]
             elif len(self.asset_equity):
-                self.context.notify("!!!! NOT SURE WHAT TO DO - ASSET's VALUE COULD NOT BE DETERMINED (in portfolio.py)")
+                self.context.notify(
+                    "!!!! NOT SURE WHAT TO DO - ASSET's VALUE COULD NOT BE DETERMINED (in portfolio.py)"
+                )
                 if self.context.backtesting():
-                    from IPython import embed; embed()
+                    from IPython import embed
+                    embed()
                     raise "asset's value could not be determined."
                 else:
                     resp['asset_equity'][asset] = 0
@@ -177,15 +191,16 @@ class BasePortfolio(object):
         return self.last_positions_and_equities_at_tick_open(field='close')
 
     def is_holding_delisted_asset(self, asset, symbol=None):
-        if (asset not in self.account.total or self.account.total[asset] < 1e-8 or
-                asset == self.context.base_currency):
+        if (asset not in self.account.total or self.account.total[asset] < 1e-8
+                or asset == self.context.base_currency):
             return False
         if not symbol:
             symbol = self.datacenter.assets_to_symbol(asset)
         if symbol not in self.datacenter.history.axes[0]:
             return True
         history = self.datacenter.history[symbol]
-        history = history[self.context.current_time.strftime("%Y-%m-%d %H:%M"):]
+        history = history[self.context.current_time.strftime("%Y-%m-%d %H:%M"
+                                                             ):]
         without_history = history.dropna(how='all').empty
         if without_history:
             self.delisted_assets.append(asset)
@@ -249,9 +264,11 @@ class BasePortfolio(object):
             return [o for o in self.orders if o.is_closed]
 
     def trading_session_complete(self):
-        props = ['advice_history', 'orders', 'open_orders', 'filled_orders',
-                 'rejected_orders', 'unfilled_orders', 'order_groups',
-                 'positions', 'asset_equity', 'timeline']
+        props = [
+            'advice_history', 'orders', 'open_orders', 'filled_orders',
+            'rejected_orders', 'unfilled_orders', 'order_groups', 'positions',
+            'asset_equity', 'timeline'
+        ]
         for prop in props:
             setattr(self, prop, as_df(getattr(self, prop)))
 
@@ -266,16 +283,15 @@ class BasePortfolio(object):
                 self.timeline['commission_paid'].cumsum()
         self.timeline = self.timeline.fillna(method='pad')
         self.timeline['returns'] = (
-            self.timeline.equity/self.timeline.equity.shift() - 1).fillna(0)
-        self.timeline['cum_returns'] = (
-            1+self.timeline['returns']).cumprod()
+            self.timeline.equity / self.timeline.equity.shift() - 1).fillna(0)
+        self.timeline['cum_returns'] = (1 + self.timeline['returns']).cumprod()
 
         # same as above for daily time period
         # this is the equity/commission paid till the start # of current day
         self.daily = self.timeline.groupby(pd.Grouper(freq='D')).last()
         self.daily['returns'] = (
             self.daily.equity / self.daily.equity.shift(1) - 1).fillna(0)
-        self.daily['cum_returns'] = (1+self.daily['returns']).cumprod()
+        self.daily['cum_returns'] = (1 + self.daily['returns']).cumprod()
 
         self._converted_to_pandas = True
 

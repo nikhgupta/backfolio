@@ -136,6 +136,8 @@ class AbstractAccount(object):
 
 
 import math
+
+
 class SimulatedAccount(AbstractAccount):
     def __init__(self, *args, initial_balance={}, **kwargs):
         super().__init__(*args, **kwargs)
@@ -145,17 +147,21 @@ class SimulatedAccount(AbstractAccount):
         for asset in list(assets):
             actual = self.free[asset] + self.locked[asset]
             expected = self.total[asset]
-            if abs(actual - expected) > 1e-8 and abs(actual/expected - 1) > 1e-6:
+            if abs(actual - expected) > 1e-8 and abs(actual / expected -
+                                                     1) > 1e-6:
                 symbol = self.datacenter.assets_to_symbol(asset)
                 price = self.datacenter._data_seen[-1].data['history']
                 if symbol in price.index:
                     price = price.loc[symbol, 'close']
                 else:
                     price = None
-                if not price or price*abs(actual - expected) > 1e-8:
-                    self.context.notify("Found balance mismatch for %s: %s (F+L) vs %s (T)" % (asset, actual, expected))
+                if not price or price * abs(actual - expected) > 1e-8:
+                    self.context.notify(
+                        "Found balance mismatch for %s: %s (F+L) vs %s (T)" %
+                        (asset, actual, expected))
                     if self.context.backtesting():
-                        from IPython import embed; embed()
+                        from IPython import embed
+                        embed()
                     return False
             elif expected <= -1e-6:
                 symbol = self.datacenter.assets_to_symbol(asset)
@@ -164,17 +170,24 @@ class SimulatedAccount(AbstractAccount):
                     price = price.loc[symbol, 'close']
                 else:
                     price = None
-                if round(expected*price,8) <= -1e-8:
-                    self.context.notify("Found negative balance for %s: %s" % (asset, expected))
+                if round(expected * price, 8) <= -1e-8:
+                    self.context.notify("Found negative balance for %s: %s" %
+                                        (asset, expected))
                     if self.context.backtesting():
-                        from IPython import embed; embed()
+                        from IPython import embed
+                        embed()
                     return False
 
-
     def display_stats(self):
-        print("Free:   %s" % {k: v for k,v in self.free.items()   if abs(v) >= 1e-8})
-        print("Total:  %s" % {k: v for k,v in self.total.items()  if abs(v) >= 1e-8})
-        print("Locked: %s" % {k: v for k,v in self.locked.items() if abs(v) >= 1e-8})
+        print("Free:   %s" %
+              {k: v
+               for k, v in self.free.items() if abs(v) >= 1e-8})
+        print("Total:  %s" %
+              {k: v
+               for k, v in self.total.items() if abs(v) >= 1e-8})
+        print("Locked: %s" %
+              {k: v
+               for k, v in self.locked.items() if abs(v) >= 1e-8})
 
     def _update_balance(self):
         if self.free:
@@ -241,7 +254,7 @@ class CcxtExchangeAccount(AbstractAccount):
 
     def _update_balance(self):
         response = self.exchange.fetch_balance()
-        for k,v in response['free'].items():
+        for k, v in response['free'].items():
             self.free[k] = float(v)
         for k, v in response['total'].items():
             self.total[k] = float(v)

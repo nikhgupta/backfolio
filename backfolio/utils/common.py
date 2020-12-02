@@ -24,7 +24,7 @@ def print_info(msg):
 
 
 def print_backfolio_version():
-    print_emphasized("Backfolio version: %s" % bf.version)
+    print_emphasized("Backfolio version: %s" % bf.__version__)
 
 
 def fetch_json(url):

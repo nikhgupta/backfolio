@@ -7,16 +7,10 @@ import pandas as pd
 
 from .core.utils import make_path, load_df, save_df
 from .core.queue import (EventQueue, EventQueueEmpty)
-from .core.event import (
-    TickUpdateEvent,
-    StrategyAdviceEvent,
-    OrderRequestedEvent,
-    OrderFilledEvent,
-    OrderUnfilledEvent,
-    OrderRejectedEvent,
-    OrderCreatedEvent,
-    OrderPendingEvent
-)
+from .core.event import (TickUpdateEvent, StrategyAdviceEvent,
+                         OrderRequestedEvent, OrderFilledEvent,
+                         OrderUnfilledEvent, OrderRejectedEvent,
+                         OrderCreatedEvent, OrderPendingEvent)
 
 
 class TradingSession:
@@ -254,9 +248,8 @@ class TradingSession:
         return self.mode == 'live'
 
     def has_session(self):
-        return (hasattr(self, 'session') and
-                self.session is not None and
-                self.session.strip())
+        return (hasattr(self, 'session') and self.session is not None
+                and self.session.strip())
 
     def _with_each_component(self, fn):
         fn('datacenter', self.datacenter)
@@ -383,8 +376,8 @@ class TradingSession:
             if not ts:
                 break
 
-            if (not self.last_run_timestamp() or
-                    ts != self.last_run_timestamp()):
+            if (not self.last_run_timestamp()
+                    or ts != self.last_run_timestamp()):
                 self._run_hook('at_each_tick_start')
 
             while True:
@@ -428,6 +421,11 @@ class TradingSession:
                 return
 
             data = event.item.history
+            # data can contain assets that are yet to have an inception
+            data = data.dropna(axis=0,
+                               how='all',
+                               subset=['close', 'low', 'open', 'high'])
+
             self._current_time = event.item.time
             self.strategy.data = data
             self.strategy.tick = event.item
@@ -512,17 +510,20 @@ class TradingSession:
 
             if counter > 5:
                 self.notify(
-                    "Could not remove %s asset from open orders or event queue!" % asset)
+                    "Could not remove %s asset from open orders or event queue!"
+                    % asset)
                 if self.backtesting():
                     from IPython import embed
                     embed()
 
         self.account.free[self.base_currency] += asset_equity
         self.account.total[self.base_currency] += asset_equity
-        self.account.total[asset] = self.account.locked[asset] = self.account.free[asset] = 0
+        self.account.total[asset] = self.account.locked[
+            asset] = self.account.free[asset] = 0
         if self.debug:
-            print("========= DELISTED COIN: %s | LAST EQUITY: %0.8f ============" % (
-                asset, asset_equity))
+            print(
+                "========= DELISTED COIN: %s | LAST EQUITY: %0.8f ============"
+                % (asset, asset_equity))
 
 
 class BacktestSession(TradingSession):
@@ -547,8 +548,9 @@ class PaperTradingSession(TradingSession):
     def reset(self):
         super().reset()
 
-        timediff = pd.to_timedelta(self.datacenter.timeframe*24)
-        self.last_tick_time = last_tick_time = pd.to_datetime(self.datacenter.history.axes[1].values[-1])
+        timediff = pd.to_timedelta(self.datacenter.timeframe * 24)
+        self.last_tick_time = last_tick_time = pd.to_datetime(
+            self.datacenter.history.axes[1].values[-1])
         self.start_time = last_tick_time.strftime("%Y%m%d %H:%M")
         self.end_time = (last_tick_time + timediff).strftime("%Y%m%d %H:%M")
 
@@ -574,8 +576,7 @@ class PaperTradingSession(TradingSession):
     def session(self, value):
         self._session = value
         if self._session and self._session.strip():
-            self._session_dir = join(
-                self.root_dir, 'sessions', self._session)
+            self._session_dir = join(self.root_dir, 'sessions', self._session)
             make_path(self._session_dir)
 
     @property
