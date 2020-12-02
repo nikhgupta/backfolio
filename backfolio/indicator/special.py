@@ -1,4 +1,6 @@
-import math
+import numpy as np
+import pandas as pd
+import math, datetime
 from .compute import stdev, rolling, rebase
 
 
@@ -66,3 +68,23 @@ def averaged_indicator(src,
         ind += func(src, pd) * (pd**pr)
         wgt += pd**pr
     return ind / wgt
+
+
+def market_index(src, freq='day'):
+    x, w, m, r = {}, {}, 1, None
+    func = lambda x: True
+    if freq == 'month': func = lambda x: x.is_month_start
+    if freq == 'year': func = lambda x: x.is_year_start
+    for ts, df in src.iterrows():
+        n = None
+        if not w or (func(ts) and ts.time() == datetime.time(0, 0)):
+            if w: n, m = r, 1
+            w = {k: 1 / v for k, v in df.items() if np.isfinite(v)}
+        r = m * math.fsum(
+            [w[k] * v for k, v in df.to_dict().items() if k in w])
+        if n:
+            m = n / r
+            r = m * r
+            n = None
+        x[ts] = r
+    return rebase(pd.Series(x))
