@@ -56,7 +56,12 @@ class BaseDatacenter(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, timeframe='1d', fill=True, realign=True, resample=None):
+    def __init__(self,
+                 timeframe='1d',
+                 max_workers=16,
+                 fill=True,
+                 realign=True,
+                 resample=None):
         self._name = 'base_datacenter'
         self._selected_symbols = []
         self.timeframe = timeframe
@@ -64,6 +69,7 @@ class BaseDatacenter(object):
         self.fill = fill
         self.resample = resample
         self.realign = realign
+        self.max_workers = max_workers
 
     def reset(self, context=None, root_dir=None):
         """ Routine to run when trading session is resetted. """
@@ -312,6 +318,9 @@ class BaseDatacenter(object):
         if has_data and not refresh:
             return
 
+        if not has_data:
+            print("Querying history for: %s" % symbol)
+
         cdf = histories[symbol] if has_data else None
         to_time = pd.to_datetime(datetime.utcnow()).floor(freq)
         if cdf is not None and not cdf.empty and cdf.index[-1] >= to_time:
@@ -362,7 +371,8 @@ class BaseDatacenter(object):
             if not refresh:
                 self.log("No history data found on this system.")
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.max_workers) as executor:
             for res in executor.map(getattr(self, "refresh_history_worker"),
                                     [(i, histories, refresh, freq)
                                      for i in self.markets]):
