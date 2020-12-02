@@ -266,3 +266,49 @@ def quick_bt(history,
                                                   yticks=None)
         P.axes.get_yaxis().set_visible(False)
     return df
+
+
+def alphalens(dc,
+              func,
+              count=3,
+              rank_first=True,
+              doprint=False,
+              periods=[[2, 3, 5, 8, 13, 21, 34, 55, 89, 144]],
+              **kwargs):
+    """
+    We define a function `alphalens` such that it takes a function (alpha) as
+    a parameter and performs performance testing using QVT library on it by
+    calculating that alpha for several time periods and adding individual
+    percentage ranks for those periods together. Alpha function must return
+    an array of various scores/alphas for that period.
+    """
+    gr = math.sqrt(5) / 2 + 0.5
+    power = gr**2
+
+    o = open = dc.history[:, :, 'open'].copy()
+    h = high = dc.history[:, :, 'high'].copy()
+    l = low = dc.history[:, :, 'low'].copy()
+    c = close = dc.history[:, :, 'close'].copy()
+    v = volume = dc.history[:, :, 'volume'].copy()
+    r = returns = c / c.shift(1) - 1
+
+    score = 0
+    for level in periods:
+        tmp_score = {}
+        for pd in level:
+            resp = func(o, h, l, c, v, r, pd)
+            for idx, r in enumerate(resp):
+                if len(tmp_score) < idx + 1:
+                    tmp_score[idx] = 0
+                tmp_score[idx] += r
+        if not rank_first:
+            for idx, ts in tmp_score.items():
+                score += ts
+        else:
+            for idx, ts in tmp_score.items():
+                score += ts.rank(axis=1, pct=True)
+    score = score.rank(axis=1, pct=True)
+    if doprint:
+        print(score.dropna().tail())
+    quick_bt(dc.history, score, top=count, bottom=count, **kwargs)
+    return score
