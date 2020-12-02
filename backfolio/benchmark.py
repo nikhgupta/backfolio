@@ -1,9 +1,12 @@
 import requests
+import numpy as np
 import pandas as pd
 from copy import deepcopy
 from abc import ABCMeta, abstractmethod
+from os import environ
 from os.path import join, isfile
 from .core.utils import make_path
+from .indicator import rebase
 import json, hashlib
 
 
@@ -31,18 +34,30 @@ class BaseBenchmark(object):
         self.name = name
         self._cache_name = cache_name
         self._result = None
+        self.context = None
         self.session_fields = ['data']
 
     def reset(self, context=None):
         self.context = context
         self._result = None
-        self.data_dir = join(context.root_dir, "benchmarks")
+        if context:
+            self.data_dir = context.root_dir
+        else:
+            self.data_dir = join(environ['HOME'], '.backfolio')
+        return self
+
+    @property
+    def data_dir(self):
+        return self._data_dir
+
+    @data_dir.setter
+    def data_dir(self, val):
+        self._data_dir = join(val, "benchmarks")
         make_path(self.data_dir)
 
         self._cache = join(self.data_dir, "%s.csv" % self._cache_name)
         if self._cache_name is None:
             self._cache = None
-        return self
 
     @property
     def account(self):
@@ -82,11 +97,15 @@ class BaseBenchmark(object):
 
     @property
     def timeline(self):
+        if self.context is None:
+            self.reset(None)
         data = self._fetch_data()
         return self._sanitize_benchmark_data(data, group_daily=False)
 
     @property
     def daily(self):
+        if self.context is None:
+            self.reset(None)
         data = self._fetch_data()
         return self._sanitize_benchmark_data(data, group_daily=True)
 
@@ -97,16 +116,19 @@ class BaseBenchmark(object):
             data = data.groupby(pd.Grouper(freq='D')).last()
 
         if 'open' in data:
-            data['returns'] = data['open']/data['open'].shift(1) - 1
+            data['returns'] = data['open'] / data['open'].shift(1) - 1
         if 'equity' in data:
-            data['returns'] = data['equity']/data['equity'].shift(1) - 1
+            data['returns'] = data['equity'] / data['equity'].shift(1) - 1
 
         data['returns'] = data['returns'].fillna(0)
-        data['cum_returns'] = (1+data['returns']).cumprod()
-        if self.context.start_time:
-            data = data[self.context.start_time:]
-        if self.context.end_time:
-            data = data[:self.context.end_time]
+        data['cum_returns'] = (1 + data['returns']).cumprod()
+
+        if self.context is not None:
+            if self.context.start_time:
+                data = data[self.context.start_time:]
+            if self.context.end_time:
+                data = data[:self.context.end_time]
+
         if len(data['cum_returns']) > 0:
             data['cum_returns'] = (data['cum_returns'] /
                                    data['cum_returns'].iloc[0])
@@ -115,12 +137,17 @@ class BaseBenchmark(object):
     def _fetch_data(self):
         if self._result is None:
             if (self._cache and isfile(self._cache) and
-                    not self.context.refresh_history):
+                (not self.context or not self.context.refresh_history)):
                 data = pd.read_csv(self._cache, index_col=0)
             else:
                 data = self._returns_data()
                 data.to_csv(self._cache, index=True)
             self._result = data
+            if self.context:
+                data = self.datacenter.history
+                start_time = data.major_axis[0].strftime("%Y-%m-%d %H:%M")
+                end_time = data.major_axis[-1].strftime("%Y-%m-%d %H:%M")
+                self._result = self._result[start_time:end_time]
         return self._result
 
     @abstractmethod
@@ -129,6 +156,11 @@ class BaseBenchmark(object):
 
 
 class SymbolAsBenchmark(BaseBenchmark):
+    """
+    Use a single symbol as a benchmark.
+
+    Effectively, we want to compare with buy and hold of a single coin.
+    """
     def __init__(self, symbol='BTC/USDT', cache_name=None):
         if not cache_name:
             cache_name = symbol.replace("/", "_")
@@ -140,6 +172,17 @@ class SymbolAsBenchmark(BaseBenchmark):
 
 
 class PortfolioAsBenchmark(BaseBenchmark):
+    """
+    Use a list of symbols as a benchmark.
+
+    Effectively, we want to compare with buy and hold of multiple coins.
+
+    Weights of individual coins can be specified, e.g. a `mapping` with:
+
+        `{"BTC/USDT": 1, "BNB/USDT": 2}`
+
+    means that the portfolio has 67% equity in BNB and 33% equity in BTC.
+    """
     def __init__(self, mapping={}, cache_name=None):
         if not cache_name:
             j = json.dumps(mapping, sort_keys=True).encode('utf-8')
@@ -161,10 +204,10 @@ class PortfolioAsBenchmark(BaseBenchmark):
         pf, wt = 0, 0
         for symbol in ch.columns:
             val = 1 if symbol not in self.mapping else self.mapping[symbol]
-            pf += val * (1+ch[symbol]).cumprod()
+            pf += val * (1 + ch[symbol]).cumprod()
             wt += val
         df = pd.DataFrame()
-        df['equity'] = pf/wt
+        df['equity'] = pf / wt
         return df
 
 
@@ -192,6 +235,13 @@ class StrategyAsBenchmark(BaseBenchmark):
 
 
 class CSVAsBenchmark(BaseBenchmark):
+    """
+    Use a saved portfolio for benchmark.
+
+    You can save a backtest run as benchmark using:
+
+        `pf.portfolio.save_as_benchmark(name)`
+    """
     def __init__(self, file_name, name=None):
         if not name:
             name = file_name
@@ -204,30 +254,82 @@ class CSVAsBenchmark(BaseBenchmark):
             return pd.read_csv(self._cache, index_col=0)
 
 
-
 class CryptoMarketCapAsBenchmark(BaseBenchmark):
-    def __init__(self, include_btc=False, cache_name=None):
-        self.graph = 'total' if include_btc else 'altcoin'
-        name = "TotalMCap" if include_btc else 'AltMCap'
+    """
+    Use crypto market capital as a benchmark.
+
+    Effectively, this is equivalent to buy and hold of all crypto assets.
+    You can, seletively, enable or disable BTC market capital.
+
+    You can also set `volume` to true to experiment with volume based data.
+    """
+    def __init__(self, include_btc=False, volume=False, cache_name=None):
+        self.volume = volume
+        self.graph = '' if include_btc else '_altcoin'
+        name = "Total" if include_btc else 'Alt'
+        name += '24hVol' if self.volume else 'MCap'
         if not cache_name:
             cache_name = name
         super().__init__(name, cache_name)
 
     def _returns_data(self):
-        data = self.datacenter.history
-        start_date = int(data.major_axis[0].timestamp())*1000
-        end_date = int(data.major_axis[-1].timestamp())*1000
-        url = 'https://graphs2.coinmarketcap.com/global/marketcap-%s/%d/%d'
-        dic_t = requests.get(url % (self.graph, start_date, end_date)).json()
-        dic_t = dic_t['market_cap_by_available_supply']
-        df = pd.DataFrame.from_dict(dic_t)
-        df.columns = ["time", "price"]
+        if self.context:
+            data = self.datacenter.history
+            start_date = int(data.major_axis[0].timestamp()) * 1000
+            end_date = int(data.major_axis[-1].timestamp()) * 1000
+        else:
+            start_date = int(pd.to_datetime("20170101").timestamp()) * 1000
+            end_date = int(pd.to_datetime("now").timestamp()) * 1000
 
-        df['time'] = pd.to_datetime(df['time'], unit='ms').dt.ceil('1d')
+        url = 'https://web-api.coinmarketcap.com/v1.1/global-metrics/quotes/historical'
+        url += '?format=chart%s&interval=1d&time_start=%d&time_end=%d'
+        url = url % (self.graph, start_date, end_date)
+        dic_t = requests.get(url).json()
+
+        df = pd.DataFrame.from_dict(dic_t['data']).transpose()
+        df.index = pd.to_datetime(df.index)
+        df = df.reset_index()
+        df.columns = ['time', 'market_cap', '24h_vol']
+
+        df['time'] = pd.to_datetime(df['time'], unit='ms').dt.floor('1d')
         df = df.drop_duplicates(subset=['time'], keep='last').set_index('time')
         df = df.reset_index()
         index = 'index' if 'index' in df.columns else 'time'
         df = df.rename(columns={index: "time"}).set_index('time')
+        df['price'] = np.log(
+            df['24h_vol']) if self.volume else df['market_cap']
+        df['returns'] = df['price'] / df['price'].shift() - 1
 
-        df['returns'] = df['price']/df['price'].shift(1) - 1
         return df
+
+
+class BitcoinMarketCapAsBenchmark(BaseBenchmark):
+    """
+    Use Bitcoin market capital as a benchmark.
+
+    Effectively, this is roughly equivalent to buy and hold of Bitcoin.
+
+    You can also set `volume` to true to experiment with volume based data.
+    """
+    def __init__(self, volume=False, cache_name=None):
+        self.volume = volume
+        name = 'BTC24hVol' if self.volume else 'BTCMCap'
+        if not cache_name:
+            cache_name = name
+        super().__init__(name, cache_name)
+
+    def _returns_data(self):
+        tot = CryptoMarketCapAsBenchmark(include_btc=True, volume=self.volume)
+        alt = CryptoMarketCapAsBenchmark(include_btc=False, volume=self.volume)
+
+        tot = tot.reset(self.context).timeline
+        alt = alt.reset(self.context).timeline
+        tot['market_cap'] -= alt['market_cap']
+        tot['24h_vol'] -= alt['24h_vol']
+
+        tot['price'] = np.log(
+            tot['24h_vol']) if self.volume else tot['market_cap']
+        tot['returns'] = tot['price'] / tot['price'].shift() - 1
+        tot = tot.drop(columns=['cum_returns'])
+
+        return tot
