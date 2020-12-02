@@ -12,12 +12,21 @@ class RebalanceOnScoreStrategy(BaseStrategy):
     Strategy that buy top scoring assets, and sells other assets
     every given time interval.
     """
-    def __init__(self, rebalance=1, assets=3, max_assets=13,
-                 max_order_size=0, min_order_size=0.001,
-                 flow_period=1, flow_multiplier=2.5,
-                 markup_sell=1, markdn_buy=1, reserved_cash=0,
-                 min_commission_asset_equity=3, weighted=False,
-                 min_ticks=0, debug=True):
+    def __init__(self,
+                 rebalance=1,
+                 assets=3,
+                 max_assets=3,
+                 max_order_size=0.1,
+                 min_order_size=0.001,
+                 flow_period=48,
+                 flow_multiplier=2.5,
+                 markup_sell=1,
+                 markdn_buy=1,
+                 reserved_cash=0,
+                 min_commission_asset_equity=3,
+                 weighted=False,
+                 min_ticks=48 * 31,
+                 debug=True):
         """
         :param rebalance: number of ticks in a rebalancing period
         :param assets: Number of assets strategy should buy.
@@ -98,9 +107,12 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         Specifically, add `_last_rebalance` time to session state.
         """
         self._state.append({
-            **data, **{
+            **data,
+            **{
                 "last_rebalance": self._last_rebalance,
-                "time": self.tick.time}})
+                "time": self.tick.time
+            }
+        })
 
     def before_trading_start(self):
         """
@@ -159,17 +171,22 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         specify `score` and `weight` at each tick.
         """
         panel = super().transform_history(panel)
-        panel.loc[:, :, 'flow'] = (
-            panel[:, :, 'close'] * panel[:, :, 'volume']).rolling(
-            self.flow_period).mean()
+        panel.loc[:, :, 'flow'] = (panel[:, :, 'close'] *
+                                   panel[:, :, 'volume']).rolling(
+                                       self.flow_period).mean()
         if hasattr(self, 'calculate_scores'):
             panel.loc[:, :, 'score'] = self.calculate_scores(panel)
         if hasattr(self, 'calculate_weights'):
             panel.loc[:, :, 'weight'] = self.calculate_weights(panel)
         return panel
 
-    def order_percent(self, symbol, amount, price=None,
-                      max_cost=None, side=None, relative=None):
+    def order_percent(self,
+                      symbol,
+                      amount,
+                      price=None,
+                      max_cost=None,
+                      side=None,
+                      relative=None):
         """
         Place a MARKET/LIMIT order for a symbol for a given percent of
         available account capital.
@@ -183,7 +200,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         amount.
         """
         if symbol in self.data.index:
-            max_flow = fast_xs(self.data, symbol)['flow']*self.flow_multiplier/100
+            max_flow = fast_xs(self.data,
+                               symbol)['flow'] * self.flow_multiplier / 100
         else:
             max_flow = 1
         if self.max_order_size:
@@ -216,7 +234,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             if limited and self.assets < self.max_assets:
                 equity = self.account.equity
                 if (equity > self.assets**(self.assets**0.2)):
-                    self.assets = min(self.max_assets, self.assets+1)
+                    self.assets = min(self.max_assets, self.assets + 1)
 
     def transform_order_calculation(self, advice, cost, quantity, price):
         """
@@ -231,7 +249,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         Do NOT set price for MARKET orders.
         You can return `(0, 0, 0)` to not place this order.
         """
-        n = (1-self.min_commission_asset_equity/100)
+        n = (1 - self.min_commission_asset_equity / 100)
         if cost > 0 and cost > self.account.free[advice.base] * n:
             cost = self.account.free[advice.base] * n
 
@@ -241,18 +259,18 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         # we do this only when the cost of order is less than
         # 3% of our account equity.
         if advice.is_limit and advice.asset != self.context.commission_asset:
-            th = self.account.equity*self.min_commission_asset_equity/100
+            th = self.account.equity * self.min_commission_asset_equity / 100
             if advice.is_buy and cost < 0 and abs(cost) < th:
                 advice.side = "SELL"
                 if price:
-                    price = self.selling_price(
-                        advice.symbol(self), {"price": advice.last_price})
+                    price = self.selling_price(advice.symbol(self),
+                                               {"price": advice.last_price})
 
             elif advice.is_sell and cost > 0 and abs(cost) < th:
                 advice.side = "BUY"
                 if price:
-                    price = self.buying_price(
-                        advice.symbol(self), {"price": advice.last_price})
+                    price = self.buying_price(advice.symbol(self),
+                                              {"price": advice.last_price})
         return (cost, quantity, price)
 
     def selling_price(self, _symbol, data):
@@ -262,7 +280,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         """
         if self.markup_sell is not None:
             price = data['price'] if 'price' in data else data['close']
-            return price*(1+self.markup_sell/100)
+            return price * (1 + self.markup_sell / 100)
 
     def buying_price(self, _symbol, data):
         """
@@ -271,7 +289,7 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         """
         if self.markdn_buy is not None:
             price = data['price'] if 'price' in data else data['close']
-            return price*(1-self.markdn_buy/100)
+            return price * (1 - self.markdn_buy / 100)
 
     def transform_tick_data(self, data):
         """
@@ -305,8 +323,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         column is missing from the assigned data.
         """
         if 'score' in data.columns:
-            return data.sort_values(
-                by=['score', 'volume', 'close'], ascending=[False, False, True])
+            return data.sort_values(by=['score', 'volume', 'close'],
+                                    ascending=[False, False, True])
         else:
             return data
 
@@ -333,9 +351,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         if not self.rebalance:
             return False
         time = self.tick.time
-        timediff = pd.to_timedelta(self.datacenter.timeframe*self.rebalance)
-        return (not self._last_rebalance or
-                time >= self._last_rebalance + timediff)
+        timediff = pd.to_timedelta(self.datacenter.timeframe * self.rebalance)
+        return (not self._last_rebalance
+                or time >= self._last_rebalance + timediff)
 
     def selected_assets(self, data):
         """
@@ -388,13 +406,13 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         # if commission_asset falls to 50% of its required minimum,
         # we need to buy commission asset, therefore, adjust for it
         asset_equity = self.portfolio.equity_per_asset
-        comm_percent = self.min_commission_asset_equity/100
+        comm_percent = self.min_commission_asset_equity / 100
         required_comm_equity = self.account.equity * comm_percent
         current_comm_equity = asset_equity[self.context.commission_asset]
         if current_comm_equity < required_comm_equity:
             data['weight'] *= 1 - comm_percent
         if self.reserved_cash:
-            data["weight"] *= (1-self.reserved_cash/100)
+            data["weight"] *= (1 - self.reserved_cash / 100)
         data['required_equity'] = data['weight'] * self.account.equity
         return data
 
@@ -432,8 +450,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         data = self.transform_tick_data(self.data)
         data = self.sorted_data(data)
         self.data = data
-        if data.empty or (
-                'score' not in data.columns and 'weight' not in data.columns):
+        if data.empty or ('score' not in data.columns
+                          and 'weight' not in data.columns):
             return
 
         # select the top performing assets based on their scores,
@@ -445,8 +463,10 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         data = self.assign_weights_and_required_equity(data, selected)
         equity = self.portfolio.equity_per_asset
         if not self._symbols:
-            self._symbols = {asset: self.datacenter.assets_to_symbol(asset)
-                             for asset, _ in equity.items()}
+            self._symbols = {
+                asset: self.datacenter.assets_to_symbol(asset)
+                for asset, _ in equity.items()
+            }
 
         if hasattr(self, "before_strategy_advice_at_tick"):
             self.before_strategy_advice_at_tick()
@@ -459,7 +479,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
 
         min_comm = self.min_commission_asset_equity
         comm_sym = self._symbols[self.context.commission_asset]
-        if equity[self.context.commission_asset] < min_comm/100*self.account.equity:
+        if equity[self.context.
+                  commission_asset] < min_comm / 100 * self.account.equity:
             self.order_percent(comm_sym, min_comm, side='BUY')
 
         # first sell everything that is not in selected coins,
@@ -468,10 +489,10 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         # ensure tyhat we have it at a fixed percent of equity all the time.
         for asset, asset_equity in equity.items():
             symbol = self._symbols[asset]
-            if (symbol in rejected.index and
-                    symbol in data.index and symbol not in selected.index):
+            if (symbol in rejected.index and symbol in data.index
+                    and symbol not in selected.index):
                 asset_data = fast_xs(data, symbol)
-                if asset_equity <= asset_data['required_equity']/100:
+                if asset_equity <= asset_data['required_equity'] / 100:
                     continue
                 n, price = 0, self.selling_price(symbol, asset_data)
                 if asset == self.context.commission_asset:
@@ -502,8 +523,8 @@ class RebalanceOnScoreStrategy(BaseStrategy):
             if asset_equity < asset_data['required_equity']:
                 price = self.buying_price(symbol, asset_data)
                 n = asset_data['weight'] * 100
-                if (asset == self.context.commission_asset and
-                        asset_equity < min_comm):
+                if (asset == self.context.commission_asset
+                        and asset_equity < min_comm):
                     self.order_percent(symbol,
                                        self.min_commission_asset_equity,
                                        side='BUY')
@@ -524,10 +545,12 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         order = event.item
         if order.id and self.debug:
             self.notify(
-                "  Created %4s %s order with ID %s for %0.8f %s at %.8f %s" % (
-                   order.side, order.order_type, order.id, abs(order.quantity),
-                   order.asset, order.fill_price, order.base),
-                formatted=True, now=event.item.time, publish=False)
+                "  Created %4s %s order with ID %s for %0.8f %s at %.8f %s" %
+                (order.side, order.order_type, order.id, abs(order.quantity),
+                 order.asset, order.fill_price, order.base),
+                formatted=True,
+                now=event.item.time,
+                publish=False)
 
     def after_order_rejected(self, event):
         """
@@ -538,8 +561,9 @@ class RebalanceOnScoreStrategy(BaseStrategy):
         order = event.item
         if self.debug:
             self.notify(
-                " Rejected %4s %s order for %0.8f %s at %.8f %s (Reason: %s)"
-                % (order.side, order.order_type, abs(order.quantity),
-                   order.asset, order.fill_price, order.base, event.reason),
-                formatted=True, now=event.item.time, publish=False)
-
+                " Rejected %4s %s order for %0.8f %s at %.8f %s (Reason: %s)" %
+                (order.side, order.order_type, abs(order.quantity),
+                 order.asset, order.fill_price, order.base, event.reason),
+                formatted=True,
+                now=event.item.time,
+                publish=False)

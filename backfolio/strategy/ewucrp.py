@@ -17,17 +17,12 @@ class EwUCRPStrategy(RebalanceOnScoreStrategy):
     in that rebalance is done daily here as opposted to when a new asset is
     introduced on the exchange.
     """
-    def transform_history(self, panel):
-        panel = super().transform_history(panel)
+    def calculate_scores(self, panel):
         panel.loc[:, :, 'score'] = 1
-        panel.loc[:, :, 'flow'] = (
-            panel[:, :, 'close'] * panel[:, :, 'volume']).rolling(
-            self.flow_period).mean()
-        if hasattr(self, 'calculate_scores'):
-            panel.loc[:, :, 'score'] = self.calculate_scores(panel)
-        if hasattr(self, 'calculate_weights'):
-            panel.loc[:, :, 'weight'] = self.calculate_weights(panel)
-        return panel
+        return panel.loc[:, :, 'score']
 
     def selected_assets(self, data):
-        return data
+        return data[data['score'] == 1]
+
+    def rejected_assets(self, data):
+        return data[data['score'] == 0]
