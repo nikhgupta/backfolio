@@ -375,7 +375,7 @@ class BaseDatacenter(object):
                 max_workers=self.max_workers) as executor:
             for res in executor.map(getattr(self, "refresh_history_worker"),
                                     [(i, histories, refresh, freq)
-                                     for i in self.markets]):
+                                     for i in sorted(self.markets)]):
                 if res is not None:
                     histories[res[0]] = res[1]
 
@@ -408,7 +408,7 @@ class CryptocurrencyDatacenter(BaseDatacenter):
                  exchange,
                  *args,
                  to_sym='BTC',
-                 limit=100000,
+                 limit=100000000,
                  per_page_limit=1000,
                  start_since=None,
                  params={},
@@ -691,6 +691,7 @@ class BinanceDatacenter(CryptocurrencyDatacenter):
         url = url % (self._market_data[symbol]['id'], timeframe)
         if till:
             url += "&endTime=%s" % till
+        print(url)
         return requests.get(url).json()
 
     def refresh_history_for_symbol(self, symbol, cdf=None):
@@ -725,6 +726,11 @@ class BinanceDatacenter(CryptocurrencyDatacenter):
 
             plen = len(cdf)
             last_timestamp = int(cdf.index[0].timestamp() * 1000)
+
+            last = 500000
+            if plen > last:
+                self._cleanup_and_save_symbol_data(symbol, cdf)
+                last += 500000
 
         return self._cleanup_and_save_symbol_data(symbol, cdf)
 

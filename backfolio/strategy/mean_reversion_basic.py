@@ -1,7 +1,8 @@
 import math
 import talib as ta
-from backfolio.core.utils import df_apply
-from backfolio.strategy import RebalanceOnScoreSplitOrdersAggressiveBuySell
+from ..indicator import alpharank
+from ..core.utils import df_apply
+from ..strategy import RebalanceOnScoreSplitOrdersAggressiveBuySell
 
 gr = math.sqrt(5) / 2 + 0.5
 
